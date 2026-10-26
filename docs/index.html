@@ -1,5 +1,11 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux, made for the Corsair Xeneon Edge.">
+<link rel="icon" type="image/png" href="img/icon.png">
 <title>Aqua MD</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&family=Doto:wght@700;900&family=Michroma&display=swap">
@@ -28,6 +34,7 @@
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
 html { scroll-behavior: smooth; }
 body {
   background:
@@ -214,6 +221,8 @@ footer p { margin: 0; max-width: 90ch; }
 }
 </style>
 
+</head>
+<body>
 <header class="top wrap">
   <div class="bar glass">
     <a class="brand" href="#top" aria-label="Aqua MD, back to top"><img src="img/icon.png" alt="" width="40" height="40"><span>AQUA MD</span></a>
@@ -490,3 +499,5 @@ footer p { margin: 0; max-width: 90ch; }
   Object.keys(SHOTS).forEach(k => { const p = new Image(); p.src = `img/${k}.webp`; });
 })();
 </script>
+</body>
+</html>

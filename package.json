@@ -1,0 +1,74 @@
+{
+  "name": "aqua-md",
+  "productName": "Aqua MD",
+  "version": "0.4.0",
+  "description": "A transparent blue MiniDisc-style music player for the Corsair Xeneon Edge",
+  "main": "main.js",
+  "desktopName": "aqua-md.desktop",
+  "author": "Daniel",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --linux dir",
+    "dist": "electron-builder --linux AppImage"
+  },
+  "build": {
+    "appId": "app.aquamd.player",
+    "productName": "Aqua MD",
+    "executableName": "aqua-md",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "engine-preload.js",
+      "lib/**",
+      "renderer/**",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asarUnpack": [],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "AudioVideo",
+      "icon": "build/icon.png",
+      "executableName": "aqua-md",
+      "synopsis": "MiniDisc-style music player",
+      "desktop": {
+        "entry": {
+          "Name": "Aqua MD",
+          "StartupWMClass": "aqua-md"
+        }
+      }
+    },
+    "appImage": {
+      "artifactName": "AquaMD-${version}-${arch}.${ext}"
+    },
+    "afterPack": "build/after-pack.js",
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
+    "publish": null,
+    "electronDist": "node_modules/electron/dist",
+    "electronVersion": "44.5.1"
+  },
+  "dependencies": {
+    "dbus-next": "0.10.2",
+    "music-metadata": "12.1.0"
+  },
+  "devDependencies": {
+    "@fontsource/barlow-semi-condensed": "5.3.0",
+    "@fontsource/doto": "5.3.0",
+    "@fontsource/michroma": "5.3.0",
+    "electron": "github:castlabs/electron-releases#v44.5.1+wvcus",
+    "electron-builder": "26.17.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Danii45/Aqua-MD.git"
+  }
+}

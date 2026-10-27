@@ -46,5 +46,7 @@
         </activity>
 
         <service android:name=".PlaybackService" android:exported="false" />
+        <!-- Catches the Spotify login answer on 127.0.0.1:43821 (same address as the desktop app) while you're in the browser. -->
+        <service android:name=".LoginService" android:exported="false" />
     </application>
 </manifest>

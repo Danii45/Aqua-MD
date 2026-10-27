@@ -43,7 +43,7 @@ Download `AquaMD-Android-Beta.apk` from [Releases](https://github.com/Danii45/Aq
 
 In Aqua MD, open Settings → Spotify and follow the steps: create a free app on the Spotify developer dashboard with the redirect URI `http://127.0.0.1:43821/callback`, tick Web API and Web Playback SDK, and paste its Client ID.
 
-On Android, add a second redirect URI to the same app: `https://danii45.github.io/Aqua-MD/callback/`. The Android app logs in through your browser, and that page sends you back to the app.
+The Android app uses the same redirect URI and Client ID: it logs in through your phone's browser and catches the answer on `127.0.0.1:43821` itself.
 
 ## Build from source
 

@@ -1790,9 +1790,9 @@ function renderAccount() {
     const li = html => { const x = el('li'); x.innerHTML = html; ol.append(x); return x; };
     const l1 = li('Open the Spotify developer dashboard and log in with your Spotify account.');
     const r1 = el('div', 'set-row'); r1.append(btn('sbtn small', 'Open dashboard', { act: 'dashboard' })); l1.append(r1);
-    li(phone ? 'Already made an <b>Aqua MD</b> app there for your computer? Open it and click <b>Edit</b>. If not, click <b>Create app</b> and name it <b>Aqua MD</b>.'
+    li(phone ? 'Already made an <b>Aqua MD</b> app there on your computer? Open it and skip to step 5: it works on your phone too. If not, click <b>Create app</b> and name it <b>Aqua MD</b>.'
       : 'Click <b>Create app</b>. Name it <b>Aqua MD</b>, and type anything as the description.');
-    const l3 = li('Under <b>Redirect URIs</b>, paste this and click <b>Add</b>:');
+    const l3 = li(phone ? 'Under <b>Redirect URIs</b>, paste this and click <b>Add</b> (it’s the same one the computer version uses):' : 'Under <b>Redirect URIs</b>, paste this and click <b>Add</b>:');
     const cb = el('div', 'codebox'); cb.append(el('code', '', A.redirectUri), btn('sbtn small', 'Copy', { act: 'copy' })); l3.append(cb);
     li(phone ? 'Make sure <b>Web API</b> is ticked, then click <b>Save</b>.' : 'Tick <b>Web API</b> and <b>Web Playback SDK</b>, agree to the terms, and click <b>Save</b>.');
     li('Copy the <b>Client ID</b> from the app’s page and paste it here:');

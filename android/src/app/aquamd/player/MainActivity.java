@@ -46,6 +46,9 @@ public class MainActivity extends Activity {
     private static final int PICK_FILES = 41;
 
     private static WeakReference<MainActivity> current = new WeakReference<MainActivity>(null);
+    /** A Spotify login answer that arrived while no deck was open. */
+    private static String loginWaiting = null;
+    private String lastAuth = null;
 
     private WebView web;
     private ValueCallback<Uri[]> fileCallback;
@@ -127,6 +130,7 @@ public class MainActivity extends Activity {
         });
         setContentView(web);
         handleIntent(getIntent());
+        if (loginWaiting != null) { String q = loginWaiting; loginWaiting = null; deliverAuth(q); }
         web.loadUrl(ORIGIN + "index.html");
     }
 
@@ -180,8 +184,17 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** From LoginService: the browser came back to 127.0.0.1:43821/callback. */
+    static void receiveLogin(String query) {
+        MainActivity a = current.get();
+        if (a != null && a.web != null) a.deliverAuth(query);
+        else loginWaiting = query;
+    }
+
     private void deliverAuth(String query) {
+        if (query.equals(lastAuth)) return; // the same answer can arrive twice (local receiver + "Back to Aqua MD")
         if (!pageReady) { pendingAuth = query; return; }
+        lastAuth = query;
         js("window.__aquaNative && window.__aquaNative.authCallback(" + JSONObject.quote(query) + ")");
     }
 
@@ -283,6 +296,13 @@ public class MainActivity extends Activity {
     private class Bridge {
         @JavascriptInterface
         public String version() { return versionName(); }
+
+        @JavascriptInterface
+        public void startLogin(String url) {
+            if (url == null || !url.startsWith("https://")) return;
+            LoginService.start(MainActivity.this);
+            openOutside(Uri.parse(url));
+        }
 
         @JavascriptInterface
         public void openExternal(String url) {

@@ -17,7 +17,9 @@ const ACCOUNTS = String(DEV.accounts || 'https://accounts.spotify.com').replace(
 const API = String(DEV.api || 'https://api.spotify.com/v1').replace(/\/$/, '');
 const SDK_URL = DEV.sdk || 'https://sdk.scdn.co/spotify-player.js';
 const LRCLIB = String(DEV.lyrics || 'https://lrclib.net').replace(/\/$/, '');
-const REDIRECT_URI = DEV.redirect || 'https://danii45.github.io/Aqua-MD/callback/';
+// The Android app catches the login on the same local address as the desktop app, so one Spotify developer app
+// works for both with nothing extra to set up. The web version comes back through the website.
+const REDIRECT_URI = DEV.redirect || (NATIVE ? 'http://127.0.0.1:43821/callback' : 'https://danii45.github.io/Aqua-MD/callback/');
 const DASHBOARD = 'https://developer.spotify.com/dashboard';
 const ENGINE_NAME = 'Aqua MD Web';
 const SCOPES = ['streaming', 'user-read-email', 'user-read-private', 'user-read-playback-state', 'user-modify-playback-state',
@@ -819,7 +821,7 @@ window.aqua = {
     try {
       const url = await web.loginUrl();
       hub.pushAccount();
-      if (NATIVE) openExternal(url); else location.href = url;
+      if (NATIVE && NATIVE.startLogin) NATIVE.startLogin(url); else if (NATIVE) openExternal(url); else location.href = url;
       return { ok: true };
     } catch (e) { return { ok: false, error: e.message }; }
   },

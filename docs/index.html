@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux (and Windows in beta), made for the Corsair Xeneon Edge.">
+<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux (plus Windows and Android betas), made for the Corsair Xeneon Edge.">
 <link rel="icon" type="image/png" href="img/icon.png">
 <title>Aqua MD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -302,7 +302,7 @@ footer p { margin: 0; max-width: 90ch; }
   <section class="hero" aria-labelledby="h1">
     <div class="hero-lcd lcd">
       <div class="row">
-        <div class="inds"><span class="ind on">LINUX</span><span class="ind beta on">WINDOWS BETA</span><span class="ind">MACOS</span></div>
+        <div class="inds"><span class="ind on">LINUX</span><span class="ind beta on">WINDOWS BETA</span><span class="ind beta on">ANDROID BETA</span><span class="ind">MACOS</span></div>
         <div class="inds"><span class="ind on">APPIMAGE</span><span class="ind on">V0.4.0</span></div>
       </div>
       <h1 id="h1">AQUA MD</h1>
@@ -314,7 +314,7 @@ footer p { margin: 0; max-width: 90ch; }
     </div>
 
     <div class="hero-text">
-      <p class="lead">Aqua MD plays Spotify, your own music and the sound from your videos on a glass deck that spins, glows and scrolls song titles across a dot-matrix display. Widgets take turns on the side. It was made for the Corsair Xeneon Edge, and it fits any window too. Linux now, Windows in beta.</p>
+      <p class="lead">Aqua MD plays Spotify, your own music and the sound from your videos on a glass deck that spins, glows and scrolls song titles across a dot-matrix display. Widgets take turns on the side. It was made for the Corsair Xeneon Edge, and it fits any window, and your phone, too. Linux now, Windows and Android in beta.</p>
       <div class="cta">
         <a class="btn primary" href="#download" id="heroDl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span>Download</span></a>
         <a class="btn" href="#features">See what it does</a>
@@ -455,11 +455,12 @@ footer p { margin: 0; max-width: 90ch; }
     <div class="sec-head">
       <span class="label">Download</span>
       <h2 id="d-h">Get Aqua MD</h2>
-      <p>For Linux, plus a Windows beta. No terminal needed.</p>
+      <p>For Linux, plus Windows and Android betas. No terminal needed.</p>
     </div>
     <div class="tabs os-tabs" role="tablist" aria-label="Choose your system">
       <button class="btn tab" role="tab" id="os-linux" aria-controls="dl-linux" aria-selected="true" data-os="linux">LINUX</button>
       <button class="btn tab" role="tab" id="os-win" aria-controls="dl-win" aria-selected="false" data-os="win">WINDOWS <span class="beta-tag">BETA</span></button>
+      <button class="btn tab" role="tab" id="os-android" aria-controls="dl-android" aria-selected="false" data-os="android">ANDROID <span class="beta-tag">BETA</span></button>
     </div>
     <div class="dl glass screws" role="tabpanel" id="dl-linux" aria-labelledby="os-linux">
       <div class="dl-lcd lcd">
@@ -499,6 +500,27 @@ footer p { margin: 0; max-width: 90ch; }
         </div>
       </div>
     </div>
+    <div class="dl glass screws" role="tabpanel" id="dl-android" aria-labelledby="os-android" hidden>
+      <div class="dl-lcd lcd">
+        <div class="inds"><span class="ind on">ANDROID 8+</span><span class="ind on">PHONE · TABLET</span><span class="ind beta on">BETA</span></div>
+        <div class="file">AquaMD-Android-Beta.apk</div>
+        <div class="meta">0.6 MB · APK</div>
+        <div class="os"><span class="ind beta on">FIRST BETA</span><span class="ind beta on">NOT YET TRIED ON A PHONE</span></div>
+      </div>
+      <div class="dl-main">
+        <a class="btn primary" href="https://github.com/Danii45/Aqua-MD/releases/latest/download/AquaMD-Android-Beta.apk" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Android <span class="beta-tag">BETA</span></a>
+        <ol class="steps">
+          <li><div><b>Download it on your phone.</b> If Chrome says the file might be harmful, tap <b>Download anyway</b>.</div></li>
+          <li><div><b>Open the file.</b> If Android asks, allow Chrome to install apps, then tap <b>Install</b>. If Play Protect warns you, tap <b>More details → Install anyway</b>. Aqua MD isn’t on the Play Store yet, so Android doesn’t know it.</div></li>
+          <li><div><b>Open Aqua MD.</b> For Spotify, follow the steps in Settings. They add one Redirect URI to your Spotify developer app.</div></li>
+        </ol>
+        <div class="beta-box">
+          <b>This is a beta.</b>
+          <span>The same glass deck, rearranged for your phone when you hold it upright. Spotify plays through the Spotify app (Premium needed), and you pick your playlists in Aqua MD. Add your own songs from the phone with <b>Add songs</b>. The System widget is desktop-only.</span>
+          <a href="#bugs">Report a problem</a>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="sec" id="bugs" aria-labelledby="b-h">
@@ -514,6 +536,7 @@ footer p { margin: 0; max-width: 90ch; }
           <div class="pick">
             <label class="opt"><input type="radio" name="system" value="Linux" checked><span>LINUX</span></label>
             <label class="opt"><input type="radio" name="system" value="Windows beta"><span>WINDOWS <span class="beta-tag">BETA</span></span></label>
+            <label class="opt"><input type="radio" name="system" value="Android beta"><span>ANDROID <span class="beta-tag">BETA</span></span></label>
           </div>
         </fieldset>
         <fieldset class="field">
@@ -522,6 +545,7 @@ footer p { margin: 0; max-width: 90ch; }
             <label class="opt"><input type="radio" name="screen" value="full screen on a Xeneon Edge" checked><span>XENEON EDGE</span></label>
             <label class="opt"><input type="radio" name="screen" value="full screen on another monitor"><span>OTHER MONITOR</span></label>
             <label class="opt"><input type="radio" name="screen" value="as a window"><span>A WINDOW</span></label>
+            <label class="opt"><input type="radio" name="screen" value="on a phone or tablet"><span>PHONE · TABLET</span></label>
           </div>
         </fieldset>
         <label class="field"><span class="flabel">What went wrong? <em>· one line</em></span>
@@ -619,10 +643,12 @@ footer p { margin: 0; max-width: 90ch; }
     });
   });
   const plat = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '').toLowerCase();
-  const onWindows = plat.includes('win');
-  pickOs(osTabs[onWindows ? 1 : 0]);
+  const onAndroid = /android/i.test(navigator.userAgent) || plat.includes('android');
+  const onWindows = !onAndroid && plat.includes('win');
+  pickOs(osTabs[onAndroid ? 2 : onWindows ? 1 : 0]);
   const heroDl = document.getElementById('heroDl');
-  if (onWindows) heroDl.querySelector('span').innerHTML = 'Download for Windows <span class="beta-tag">BETA</span>';
+  if (onAndroid) heroDl.querySelector('span').innerHTML = 'Download for Android <span class="beta-tag">BETA</span>';
+  else if (onWindows) heroDl.querySelector('span').innerHTML = 'Download for Windows <span class="beta-tag">BETA</span>';
   else if (plat.includes('linux')) heroDl.querySelector('span').textContent = 'Download for Linux';
 
   // Widget screenshots.
@@ -659,7 +685,8 @@ footer p { margin: 0; max-width: 90ch; }
   const form = document.getElementById('bugForm');
   const bugMsg = document.getElementById('bugMsg');
   const HINT = bugMsg.innerHTML;
-  form.elements.system.value = onWindows ? 'Windows beta' : 'Linux';
+  form.elements.system.value = onAndroid ? 'Android beta' : onWindows ? 'Windows beta' : 'Linux';
+  if (onAndroid) form.elements.screen.value = 'on a phone or tablet';
   form.addEventListener('input', e => { if (e.target.value.trim()) e.target.removeAttribute('aria-invalid'); });
   form.addEventListener('submit', e => {
     e.preventDefault();

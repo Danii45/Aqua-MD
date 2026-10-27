@@ -1,6 +1,6 @@
 # Aqua MD
 
-A see-through, MiniDisc-style music player for Linux, made for the Corsair Xeneon Edge (2560 × 720) and happy in any window.
+A see-through, MiniDisc-style music player for Linux (plus Windows and Android betas), made for the Corsair Xeneon Edge (2560 × 720) and happy in any window.
 
 ![Aqua MD on a 2560 × 720 screen](docs/img/hero-blue.webp)
 
@@ -30,9 +30,20 @@ Download `AquaMD-Windows-Beta-Setup.exe` from [Releases](https://github.com/Dani
 - CPU and GPU temperatures aren't shown on Windows.
 - Please report problems in [Issues](https://github.com/Danii45/Aqua-MD/issues).
 
+### Android (beta)
+
+Download `AquaMD-Android-Beta.apk` from [Releases](https://github.com/Danii45/Aqua-MD/releases) on your phone and open it. Needs Android 8 or newer.
+
+- It isn't on the Play Store, so Android asks you to allow installing it, and Play Protect may warn you: tap **More details → Install anyway**.
+- The deck rearranges itself into a column when you hold the phone upright.
+- Spotify plays through the Spotify app (Premium needed); you pick playlists and control it in Aqua MD.
+- Add your own songs with **Add songs**. They're copied into the app, so they keep working if you move the files.
+
 ## Spotify setup
 
 In Aqua MD, open Settings → Spotify and follow the steps: create a free app on the Spotify developer dashboard with the redirect URI `http://127.0.0.1:43821/callback`, tick Web API and Web Playback SDK, and paste its Client ID.
+
+On Android, add a second redirect URI to the same app: `https://danii45.github.io/Aqua-MD/callback/`. The Android app logs in through your browser, and that page sends you back to the app.
 
 ## Build from source
 
@@ -41,7 +52,13 @@ npm install
 npm start            # run it
 npm run dist         # build dist/AquaMD-<version>-x86_64.AppImage
 npm run dist:win     # Windows installer; needs castLabs Electron for win32-x64 unpacked in ../castlabs-win
+node tools/build-apk.js 0.4.0-beta.1 1   # Android APK (see below)
 ```
+
+The Android app is a small native shell (`android/`) around the same interface, built for the browser by
+`tools/build-web.js` (`web/platform.js` stands in for Electron's main process). `tools/build-apk.js` builds it
+without Gradle, using Ubuntu's packages: `sudo apt install aapt apksigner zipalign android-sdk-platform-23 dalvik-exchange`.
+Keep the signing key it creates in `~/.aqua-md-keys`: updates only install over the app when signed with the same key.
 
 Built with castLabs Electron (Electron with Widevine), which Spotify's Web Playback SDK needs.
 

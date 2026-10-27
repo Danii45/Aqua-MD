@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aqua MD for Android. Built with tools/build-apk.js (aapt, javac, dx, apksigner; no Gradle).
+     versionCode / versionName / minSdk / targetSdk are passed in by the build script. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="app.aquamd.player">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Keeps your own music playing while the screen is off, with a notification to control it. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Aqua MD opens the Spotify app to play Spotify. -->
+    <queries>
+        <package android:name="com.spotify.music" />
+    </queries>
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.Aqua"
+        android:allowBackup="false"
+        android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="false">
+
+        <!-- Rotating, folding/unfolding and resizing don't restart the deck. The build script also adds the
+             "density" and "colorMode" flags, which are newer than the Android 6 SDK this compiles against. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|layoutDirection|fontScale|locale|touchscreen"
+            android:screenOrientation="fullUser"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Spotify login comes back here: aquamd://callback?code=…&state=… (via the website's callback page). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="aquamd" android:host="callback" />
+            </intent-filter>
+        </activity>
+
+        <service android:name=".PlaybackService" android:exported="false" />
+    </application>
+</manifest>

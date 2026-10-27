@@ -56,8 +56,8 @@ button, input { font: inherit; color: inherit; }
 /* ---------- section 1: clock + weather ---------- */
 .s1 { position: absolute; left: 0; top: 0; width: 730px; height: 632px; display: flex; flex-direction: column; transition: opacity .35s ease, transform .45s cubic-bezier(.2,.8,.2,1); }
 .s1.away { opacity: 0; transform: translateX(-40px); pointer-events: none; }
-.date-row { display: flex; align-items: center; justify-content: space-between; }
-.date { font-family: var(--font-label); font-size: 21px; letter-spacing: .18em; white-space: nowrap; text-transform: uppercase; color: var(--ink-dim); }
+.date-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.date { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-label); font-size: 21px; letter-spacing: .18em; white-space: nowrap; text-transform: uppercase; color: var(--ink-dim); }
 .gear { width: 64px; height: 64px; margin: -10px -8px -10px 0; border-radius: 50%; border: 1.5px solid hsl(calc(var(--h) - 5) 100% 79% / .3); background: hsl(calc(var(--h) + 6) 72% 51% / .14); display: grid; place-items: center; cursor: pointer; color: var(--ink-dim); transition: background .25s, color .25s, transform .4s cubic-bezier(.2,.8,.2,1); }
 .gear:hover { background: hsl(calc(var(--h) + 5) 81% 58% / .26); color: var(--ink); }
 .gear:active { transform: rotate(45deg) scale(.95); }
@@ -341,7 +341,7 @@ button, input { font: inherit; color: inherit; }
 .guts .dot { fill: hsl(calc(var(--h) - 5) 100% 83% / .4); stroke: none; }
 
 /* ---------- header buttons (section 1) ---------- */
-.hbtns { display: flex; gap: 12px; margin: -10px -8px -10px 0; }
+.hbtns { flex: none; display: flex; gap: 12px; margin: -10px -8px -10px 0; }
 .hbtns .gear { margin: 0; }
 .hbtns .gear.wide { width: auto; padding: 0 22px 0 18px; border-radius: 32px; gap: 10px; display: flex; align-items: center; font-family: var(--font-label); font-size: 14px; letter-spacing: .18em; }
 .hbtns .gear.wide svg { width: 28px; height: 28px; }
@@ -540,3 +540,33 @@ button, input { font: inherit; color: inherit; }
 .panelbox .panel { pointer-events: auto; }
 .stage.stacked .deckbox::after { content: ""; position: absolute; left: 36px; right: 36px; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, hsl(calc(var(--h) - 5) 100% 79% / .25), transparent); }
 .cap-note { margin: 0; font-size: 19px; color: var(--ink-dim); }
+
+/* ---------- phones held upright: the deck becomes a column (disc, display, buttons, discs) ---------- */
+.stage.tall .deckbox { width: 900px; height: 1340px; }
+.stage.tall .deck { left: 30px; top: 30px; width: 840px; height: 1280px; border-radius: 52px; }
+.stage.tall .guts { display: none; }
+.stage.tall .bay { left: 160px; top: 30px; transform: scale(.84); transform-origin: 50% 0; }
+.stage.tall .lcd { left: 30px; top: 532px; width: 780px; height: 316px; padding: 18px 26px; }
+.stage.tall .lcd-top { flex-wrap: wrap; row-gap: 6px; }
+.stage.tall .inds { gap: 14px; }
+.stage.tall .segs i { width: 10px; }
+.stage.tall .prog { left: 30px; top: 860px; width: 780px; }
+.stage.tall .controls { left: 30px; top: 912px; width: 780px; height: 250px; flex-wrap: wrap; justify-content: center; align-content: space-between; column-gap: 16px; row-gap: 21px; }
+.stage.tall .controls::after { content: ""; order: 5; flex-basis: 100%; height: 0; }
+.stage.tall #prevBtn { order: 1; } .stage.tall #playBtn { order: 2; } .stage.tall #stopBtn { order: 3; } .stage.tall #nextBtn { order: 4; }
+.stage.tall #shufBtn { order: 6; } .stage.tall #repBtn { order: 7; } .stage.tall #ejectBtn { order: 8; }
+.stage.tall .knob { order: 9; margin-left: 0; width: 104px; height: 104px; }
+.stage.tall .cbtn { width: 150px; height: 104px; border-radius: 30px; }
+.stage.tall .cbtn.play { width: 214px; }
+.stage.tall .cbtn.sm { width: 128px; }
+.stage.tall .cbtn svg { width: 46px; height: 46px; }
+.stage.tall .cbtn.sm svg { width: 40px; height: 40px; }
+.stage.tall .rack { left: 30px; top: 1170px; width: 780px; height: 86px; }
+
+/* ---------- phones held sideways: the deck with just the header row above it ---------- */
+.stage.compact .widgets { display: none; }
+.stage.tall .w-clock .hm { font-size: 150px; }
+.stage.tall .w-clock.w-XL .hm { font-size: 168px; }
+.stage.tall .w-clock.w-S .hm { font-size: 100px; }
+/* On a phone the panels cover the deck: make them solid enough to read over the bright disc. */
+.stage.tall .panel, .stage.compact .panel { background-color: hsl(calc(var(--h) + 7) 60% 8% / .88); }

@@ -8,16 +8,49 @@ const root = document.documentElement;
 
 /* ---------- layout: fits any window ----------
    Wide windows (like the Xeneon Edge) put widgets left and the deck right, everything scaled by height.
-   Other shapes stack the deck on top and give the widgets the rest, so a bigger window holds more widgets. */
+   Other shapes stack the deck on top and give the widgets the rest, so a bigger window holds more widgets.
+   Phones: upright ("tall") rearranges the deck into a column with the disc on top; sideways and short
+   ("compact") shows the deck with just the header row above it. */
 const deckbox = $('deckbox'), sidebox = $('sidebox'), panelbox = $('panelbox'), s1El = $('s1');
-const DECK_W = 1703, DECK_H = 720;
+const DECK_W = 1703, DECK_H = 720, TALL_W = 900, TALL_H = 1340;
 let SCALE = 1, SSCALE = 1, GEO = { w: 730, pageH: 548, cols: 1, perCol: 3, cap: 3, colW: 730, wide: true };
-let geoKey = '';
+let geoKey = '', LAYOUT = 'wide';
+// What this copy of Aqua MD runs on, and what it can do there (the Android app has no folders, drag and drop, etc.).
+let PLATFORM = 'linux';
+let FEAT = { folders: true, drop: true, quit: true, startup: true, screens: true, onTop: true, fullscreen: true, keepAwake: false };
 function layout() {
   const W = Math.max(1, innerWidth), H = Math.max(1, innerHeight);
-  const wide = W / H >= 3;
+  const ratio = W / H;
+  const mode = ratio >= 3 ? 'wide' : ratio < 0.8 ? 'tall' : (H < 560 && ratio >= 1.25) ? 'compact' : 'stacked';
+  const wide = mode === 'wide';
+  const colMin = mode === 'tall' ? 540 : 700;
+  LAYOUT = mode;
   let sw, sh;
-  if (wide) {
+  if (mode === 'tall') {
+    const sd = Math.min(W / TALL_W, 0.74 * H / TALL_H);
+    const top = TALL_H * sd;
+    const ss = Math.max(0.5, Math.min(1, (W - 32) / colMin));
+    SCALE = sd; SSCALE = ss;
+    deckbox.style.transform = `translate(${(W - TALL_W * sd) / 2}px, 0px) scale(${sd})`;
+    sidebox.style.transform = `translate(16px, ${top + 4}px) scale(${ss})`;
+    sw = (W - 32) / ss; sh = Math.max(200, (H - top - 12) / ss);
+    const ps = Math.max(0.6, Math.min(1, W / 560));
+    const pw = Math.min(790, W / ps - 24), ph = Math.min(1500, H / ps - 24);
+    panelbox.style.transform = `translate(${(W - pw * ps) / 2}px, ${H - (ph + 12) * ps}px) scale(${ps})`;
+    panelbox.style.width = pw + 'px'; panelbox.style.height = ph + 'px';
+  } else if (mode === 'compact') {
+    const head = 60;
+    const sd = Math.min(W / DECK_W, (H - head) / DECK_H);
+    const ss = 0.72;
+    SCALE = sd; SSCALE = ss;
+    deckbox.style.transform = `translate(${(W - DECK_W * sd) / 2}px, ${head}px) scale(${sd})`;
+    sidebox.style.transform = `translate(${Math.max(16, (W - DECK_W * sd) / 2 + 30 * sd)}px, 10px) scale(${ss})`;
+    sw = (W - 2 * Math.max(16, (W - DECK_W * sd) / 2 + 30 * sd)) / ss; sh = 200;
+    const ps = Math.max(0.5, Math.min(1, H / 700));
+    const pw = Math.min(790, W / ps - 40), ph = Math.min(660, H / ps - 24);
+    panelbox.style.transform = `translate(${16}px, ${H - (ph + 12) * ps}px) scale(${ps})`;
+    panelbox.style.width = pw + 'px'; panelbox.style.height = ph + 'px';
+  } else if (wide) {
     const s = H / DECK_H;
     SCALE = SSCALE = s;
     deckbox.style.transform = `translate(${W - DECK_W * s}px, 0px) scale(${s})`;
@@ -40,10 +73,12 @@ function layout() {
     panelbox.style.transform = `translate(${30 * ss}px, ${Math.max(0, H - (ph + 30) * ss)}px) scale(${ss})`;
     panelbox.style.width = pw + 'px'; panelbox.style.height = ph + 'px';
   }
-  stage.classList.toggle('stacked', !wide);
+  stage.classList.toggle('stacked', mode === 'stacked');
+  stage.classList.toggle('tall', mode === 'tall');
+  stage.classList.toggle('compact', mode === 'compact');
   s1El.style.width = sw + 'px'; s1El.style.height = sh + 'px';
   const pageH = Math.max(120, Math.round(sh - 84));
-  const cols = Math.max(1, Math.floor((sw + 40) / (700 + 40)));
+  const cols = Math.max(1, Math.floor((sw + 40) / (colMin + 40)));
   const perCol = Math.max(1, Math.min(6, Math.floor((pageH + 22) / (140 + 22))));
   GEO = { w: sw, pageH, cols, perCol, cap: Math.min(12, cols * perCol), colW: (sw - 40 * (cols - 1)) / cols, wide };
   const key = [Math.round(sw / 8), Math.round(pageH / 8), cols, perCol].join('|');
@@ -384,7 +419,8 @@ function spotify(cmd, arg, failText) {
 // Why Spotify can't play right now, in words for the display.
 function spotifyBlocker() {
   const eng = (ACCOUNT.engine && ACCOUNT.engine.status) || 'off';
-  if (!ACCOUNT.linked && !SP.appOpen) return ['CONNECT SPOTIFY', 'Set it up in Settings, or open the Spotify app'];
+  if (!ACCOUNT.linked && !SP.appOpen) return ['CONNECT SPOTIFY', eng === 'unsupported' ? 'Set it up in Settings' : 'Set it up in Settings, or open the Spotify app'];
+  if (eng === 'unsupported') return ['SPOTIFY', 'Pick a playlist, or play something in Spotify'];
   if (ACCOUNT.linked && eng === 'starting') return ['STARTING', 'Getting Spotify’s player ready'];
   if (ACCOUNT.linked && eng === 'error' && !SP.appOpen) return ['NO SPOTIFY', 'Built-in player unavailable · see Settings'];
   return ['NO SPOTIFY', 'Open the Spotify app on this PC'];
@@ -394,7 +430,8 @@ const spotifyVol = () => SP.via === 'aqua' ? volGain() : S.vol / 30;
 function playErrorText(r) {
   switch (r && r.error) {
     case 'not-linked': return 'Connect Spotify in Settings first';
-    case 'no-device': return ACCOUNT.engine && ACCOUNT.engine.status === 'starting' ? 'Spotify’s player is still starting · try again in a moment' : 'Built-in player isn’t ready · open the Spotify app or check Settings';
+    case 'no-device': if (ACCOUNT.engine && ACCOUNT.engine.status === 'unsupported') return 'Spotify didn’t open · open the Spotify app, then try again';
+      return ACCOUNT.engine && ACCOUNT.engine.status === 'starting' ? 'Spotify’s player is still starting · try again in a moment' : 'Built-in player isn’t ready · open the Spotify app or check Settings';
     default: return r && r.status === 404 ? 'Spotify couldn’t find a player · press play again' : `Spotify: ${(r && r.error) || 'something went wrong'}`;
   }
 }
@@ -752,6 +789,10 @@ function render() {
   paintLabel(); renderRack();
   if (plPanel && !plPanel.hidden) markActivePlaylist();
   renderWidgets();
+  // The Android app shows a notification and keeps playing in the background while your own music plays.
+  if (api && api.nowPlaying) {
+    api.nowPlaying({ playing: !!(on && S.playing), local: !isSpot(), title: (t && t.title) || '', artist: (t && t.artist) || '' });
+  }
 }
 
 /* ---------- disc rack ---------- */
@@ -792,8 +833,8 @@ function renderRack() {
   }
   const demo = chip(active === 'demo' ? 'active' : '', miniFor('', null, 'demo'), DEMO.name, plural(DEMO.tracks.length));
   demo.dataset.disc = 'demo'; kids.push(demo);
-  const add = chip('add', el('span', 'plus', '+'), 'Add songs', 'or drop files here'); add.dataset.act = 'files'; kids.push(add);
-  const fold = chip('add', el('span', 'plus', '+'), 'Add folder', 'albums become discs'); fold.dataset.act = 'folder'; kids.push(fold);
+  const add = chip('add', el('span', 'plus', '+'), 'Add songs', FEAT.drop ? 'or drop files here' : (PLATFORM === 'android' ? 'from this phone' : 'pick files')); add.dataset.act = 'files'; kids.push(add);
+  if (FEAT.folders) { const fold = chip('add', el('span', 'plus', '+'), 'Add folder', 'albums become discs'); fold.dataset.act = 'folder'; kids.push(fold); }
   const keep = rack.scrollLeft;
   rack.replaceChildren(...kids);
   rack.scrollLeft = keep;
@@ -860,7 +901,7 @@ addEventListener('dragenter', e => { if (!hasFiles(e)) return; dragDepth++; drop
 addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) drop.classList.remove('show'); });
 addEventListener('drop', e => {
   e.preventDefault(); dragDepth = 0; drop.classList.remove('show');
-  if (api && e.dataTransfer && e.dataTransfer.files.length) runImport(api.importFiles(e.dataTransfer.files));
+  if (api && FEAT.drop && e.dataTransfer && e.dataTransfer.files.length) runImport(api.importFiles(e.dataTransfer.files, e.dataTransfer.items));
 });
 
 /* ---------- controls ---------- */
@@ -1347,7 +1388,7 @@ function wSystem(size) {
     r.segs.forEach((s, i) => { s.classList.toggle('on', i < n); s.classList.toggle('hot', i >= SEG - 4); });
   };
   const deg = t => (t == null ? '' : Math.round(t) + '°');
-  if (!api) tag.textContent = 'DESKTOP APP ONLY';
+  if (!api || PLATFORM === 'android' || PLATFORM === 'web') tag.textContent = 'DESKTOP APP ONLY';
   return { el: e, sys(st) {
     if (!st) return;
     setBar(R.cpu, st.cpu); R.cpu.val.textContent = st.cpu == null ? '--' : Math.round(st.cpu) + '%'; R.cpu.temp.textContent = deg(st.cpuTemp);
@@ -1458,7 +1499,7 @@ function renderWidgetEditor() {
     if (list.length > cap) c.append(el('p', 'cap-note', `At this window size this page shows as ${Math.ceil(list.length / cap)} pages. Make the window bigger to fit it on one.`));
     if (list.length < Math.min(cap, MAX_PER_PAGE)) {
       const add = el('div', 'wadd');
-      for (const t of WTYPES) add.append(btn('seg', '+ ' + WIDGETS[t].name, { act: 'add', p: pi, type: t }));
+      for (const t of WTYPES) if (t !== 'system' || !(PLATFORM === 'android' || PLATFORM === 'web')) add.append(btn('seg', '+ ' + WIDGETS[t].name, { act: 'add', p: pi, type: t }));
       c.append(add);
     } else if (list.length >= cap) c.append(el('p', 'cap-note', `This window fits ${cap} ${cap === 1 ? 'widget' : 'widgets'} per page. Make it bigger for more, or add another page.`));
     kids.push(c);
@@ -1594,6 +1635,8 @@ plBody.addEventListener('click', e => {
     const p = (PLAYLISTS || []).find(x => x.id === b.dataset.pid); if (!p) return;
     const d = plDisc(p);
     const shuffle = act === 'shuffle';
+    // On a phone the list covers the deck, so get out of the way once a playlist is picked.
+    if (LAYOUT === 'tall' || LAYOUT === 'compact') closePanel();
     if (S.inserted && S.discId === d.id && !S.busy) {
       if (shuffle) playPlaylist(d, { shuffle: true });
       else if (S.playing) pause(); else play();
@@ -1641,6 +1684,24 @@ function integrationNote(r) {
 optLogin.addEventListener('change', async () => { if (api) integrationNote(await api.set('startOnLogin', optLogin.checked)); });
 optMenu.addEventListener('change', async () => { if (api) integrationNote(await api.set('appMenu', optMenu.checked)); });
 optTop.addEventListener('change', () => { if (api) api.set('onTop', optTop.checked); });
+const optAwake = $('optAwake');
+optAwake.addEventListener('change', () => { if (api && api.setKeepAwake) api.setKeepAwake(optAwake.checked); });
+// Hide the settings this platform can't use.
+function applyFeatures() {
+  const hide = (node, yes) => { if (node) node.hidden = !!yes; };
+  hide(optLogin.closest('.set-group'), !FEAT.startup);
+  hide($('quitBtn'), !FEAT.quit);
+  hide($('scrNext').closest('.set-row'), !FEAT.screens);
+  hide(optTop.closest('.toggle'), !FEAT.onTop);
+  hide(optAwake.closest('.toggle'), !FEAT.keepAwake);
+  hide($('addFolder'), !FEAT.folders);
+  hide(winMode, !FEAT.fullscreen);
+  if (PLATFORM === 'android') {
+    const w = winMode.querySelector('[data-mode="window"]'); if (w) w.textContent = 'With status bar';
+    const lab = winMode.querySelector('span'); if (lab) lab.textContent = 'Show Aqua MD';
+  }
+  rackSig = '';
+}
 const winMode = $('winMode');
 function paintWinMode() {
   const mode = DISPLAY ? (DISPLAY.fullscreen ? 'full' : 'window') : 'full';
@@ -1720,16 +1781,20 @@ const ENGINE_TEXT = {
 function renderAccount() {
   if (!spBox) return;
   const A = ACCOUNT, kids = [];
+  const phone = (A.engine && A.engine.status) === 'unsupported';
   if (!A.configured) {
-    kids.push(el('p', 'set-note', 'Play Spotify right inside Aqua MD, no Spotify app needed. One-time setup, about two minutes:'));
+    kids.push(el('p', 'set-note', phone
+      ? 'See your Spotify playlists here and control the music. On this phone it plays through the Spotify app. One-time setup, about two minutes:'
+      : 'Play Spotify right inside Aqua MD, no Spotify app needed. One-time setup, about two minutes:'));
     const ol = el('ol', 'steps');
     const li = html => { const x = el('li'); x.innerHTML = html; ol.append(x); return x; };
     const l1 = li('Open the Spotify developer dashboard and log in with your Spotify account.');
     const r1 = el('div', 'set-row'); r1.append(btn('sbtn small', 'Open dashboard', { act: 'dashboard' })); l1.append(r1);
-    li('Click <b>Create app</b>. Name it <b>Aqua MD</b>, and type anything as the description.');
+    li(phone ? 'Already made an <b>Aqua MD</b> app there for your computer? Open it and click <b>Edit</b>. If not, click <b>Create app</b> and name it <b>Aqua MD</b>.'
+      : 'Click <b>Create app</b>. Name it <b>Aqua MD</b>, and type anything as the description.');
     const l3 = li('Under <b>Redirect URIs</b>, paste this and click <b>Add</b>:');
     const cb = el('div', 'codebox'); cb.append(el('code', '', A.redirectUri), btn('sbtn small', 'Copy', { act: 'copy' })); l3.append(cb);
-    li('Tick <b>Web API</b> and <b>Web Playback SDK</b>, agree to the terms, and click <b>Save</b>.');
+    li(phone ? 'Make sure <b>Web API</b> is ticked, then click <b>Save</b>.' : 'Tick <b>Web API</b> and <b>Web Playback SDK</b>, agree to the terms, and click <b>Save</b>.');
     li('Copy the <b>Client ID</b> from the app’s page and paste it here:');
     kids.push(ol);
     const form = el('form', 'set-row'); form.id = 'spForm';
@@ -1738,13 +1803,26 @@ function renderAccount() {
     kids.push(form);
   } else if (!A.linked) {
     kids.push(statusLine('', `Client ID saved (${A.clientIdHint}).`));
-    kids.push(el('p', 'set-note small', A.loggingIn ? 'Finish logging in in your browser, then come back here.' : 'Press Log in. A browser tab opens; log in to Spotify, click Agree, and come back.'));
+    kids.push(el('p', 'set-note small', phone
+      ? (A.loggingIn ? 'Finish logging in in your browser, then tap “Back to Aqua MD”.' : 'Press Log in. Your browser opens; log in to Spotify, tap Agree, then tap “Back to Aqua MD”.')
+      : (A.loggingIn ? 'Finish logging in in your browser, then come back here.' : 'Press Log in. A browser tab opens; log in to Spotify, click Agree, and come back.')));
     const row = el('div', 'set-row');
     row.append(btn('sbtn primary', A.loggingIn ? 'Open login again' : 'Log in with Spotify', { act: 'login' }), btn('sbtn', 'Change Client ID', { act: 'forget' }));
     kids.push(row);
   } else {
     kids.push(statusLine('ok', `Connected${A.name ? ' as ' + A.name : ''}.`));
     const eng = A.engine || { status: 'off' };
+    if (phone) {
+      kids.push(statusLine(A.appOpen ? 'ok' : '', A.appOpen
+        ? `Following Spotify on ${A.deviceName || 'your phone'}. The deck controls it.`
+        : 'Music plays through the Spotify app. Pick a playlist and Aqua MD opens Spotify for you.'));
+      const prow = el('div', 'set-row');
+      prow.append(btn('sbtn', 'Playlists', { act: 'playlists' }), btn('sbtn', 'Log out', { act: 'logout' }));
+      kids.push(prow);
+      if (A.error || accountMsg) kids.push(el('p', 'set-note small', A.error || accountMsg));
+      spBox.replaceChildren(...kids);
+      return;
+    }
     if (eng.status === 'ready') kids.push(statusLine('ok', 'Built-in player ready. Aqua MD also shows up as a speaker in Spotify on your phone.'));
     else if (eng.status === 'starting') kids.push(statusLine('warn', 'Starting the built-in player. The first start can take a minute while Spotify’s copy protection downloads.'));
     else if (eng.status === 'error') {
@@ -1904,12 +1982,16 @@ async function init() {
     ACCOUNT = Object.assign({}, ACCOUNT, data.account || {});
     DISPLAY = data.display || null;
     APPIMAGE = !!data.appImage;
+    PLATFORM = data.platform || 'linux';
+    FEAT = Object.assign(FEAT, data.features || {});
+    applyFeatures();
     if (data.platform === 'win32') { optMenu.closest('.toggle').hidden = true; }
     optLogin.checked = !!st.startOnLogin;
     optMenu.checked = st.appMenu !== false;
     optTop.checked = !!st.onTop;
+    optAwake.checked = !!st.keepAwake;
     integrationNote({ appImage: APPIMAGE });
-    $('ver').textContent = `Aqua MD ${data.version || ''}`.trim();
+    $('ver').textContent = `Aqua MD ${data.version || ''}${PLATFORM === 'android' ? ' · Android beta' : ''}`.trim();
     const last = st.lastDisc;
     let start = 'demo';
     if (last === 'spotify' && SP.available) start = 'spotify';
@@ -1934,6 +2016,16 @@ async function init() {
   requestAnimationFrame(frame);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { curTitle = null; if (L.mode === 'track') trackText(); requestAnimationFrame(measureTitle); });
 }
+
+// Used by the Android app: its Back button and the play/next buttons in its notification.
+window.__aquaRemote = {
+  playpause: () => (S.playing ? pause() : play()),
+  play: () => { if (!S.playing) play(); },
+  pause: () => { if (S.playing) pause(); },
+  next: () => next(),
+  prev: () => prev(),
+  back: () => { if (openName) { closePanel(); return true; } return false; }
+};
 
 // Read-only view of the player, used by the automated self-test.
 window.__aquaDebug = {

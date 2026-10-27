@@ -826,7 +826,7 @@ window.aqua = {
     return {
       version: NATIVE && NATIVE.version ? NATIVE.version() : VERSION,
       platform: PLATFORM, appImage: true,
-      features: { folders: !NATIVE, drop: !MOBILE, quit: false, startup: false, screens: false, onTop: false, fullscreen: true, keepAwake: !!(NATIVE && NATIVE.setKeepAwake) || 'wakeLock' in navigator },
+      features: { folders: !NATIVE && !MOBILE, drop: !MOBILE, quit: false, startup: false, screens: false, onTop: false, fullscreen: true, keepAwake: !!(NATIVE && NATIVE.setKeepAwake) || 'wakeLock' in navigator },
       settings: {
         weather: settings.get('weather'), volume: settings.get('volume'), lastDisc: settings.get('lastDisc'), shuffle: !!settings.get('shuffle'),
         repeat: settings.get('repeat') || 'off', colors: settings.get('colors') || {}, recentPlaylists: settings.get('recentPlaylists') || [], widgets: settings.get('widgets'),

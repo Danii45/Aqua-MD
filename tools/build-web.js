@@ -68,7 +68,7 @@ if (webApp) {
 let html = fs.readFileSync(path.join(ROOT, 'renderer', 'index.html'), 'utf8');
 html = html
   .replace('<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">\n<meta http-equiv="Content-Security-Policy" content="${CSP}">\n<meta name="theme-color" content="#070c17">\n<link rel="icon" href="icon.png">${webApp ? '\n<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="icon-192.png">' : ''}`)
+    `<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">\n<meta http-equiv="Content-Security-Policy" content="${CSP}">\n<meta name="theme-color" content="#070c17">\n<link rel="icon" href="icon.png">${webApp ? '\n<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="icon-180.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n<meta name="apple-mobile-web-app-title" content="Aqua MD">\n<meta name="apple-mobile-web-app-status-bar-style" content="black">' : ''}`)
   .replace('<script src="app.js" defer></script>', '<script src="platform.js"></script>\n<script src="app.js" defer></script>');
 if (!html.includes('platform.js') || !html.includes('Content-Security-Policy')) throw new Error('index.html changed shape; update tools/build-web.js');
 fs.writeFileSync(path.join(out, 'index.html'), html);

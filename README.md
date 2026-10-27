@@ -4,16 +4,17 @@ A see-through, MiniDisc-style music player for Linux (plus Windows, Mac, Android
 
 ![Aqua MD on a 2560 × 720 screen](docs/img/hero-blue.webp)
 
-- **Spotify, built in:** log in once and Aqua MD plays Spotify by itself (Spotify Premium needed). It also controls the Spotify desktop app.
+- **Spotify, built in:** log in once and Aqua MD plays Spotify by itself (Spotify Premium needed). Search for songs, albums and playlists, or scroll through a playlist's songs and tap one. It also controls the Spotify desktop app.
+- **No Premium? (Linux)** Play music in the Spotify app or at open.spotify.com in your browser; Aqua MD shows it and its buttons control it.
 - **Your own music:** MP3, M4A, FLAC, WAV, OGG, plus the sound from MP4 and MOV videos. Each album becomes a disc.
-- **Seven colours:** give any disc or playlist a colour and the whole app fades to it.
+- **Colours:** give any disc, playlist or single song one of seven colours, or **Auto** to take the colour of the cover, and the whole app fades to it.
 - **Widget pages:** clock, weather, lyrics, now playing, up next, system stats and calendar, on pages that take turns.
 - **Lyrics:** from a `.lrc` file next to the song, the song file itself, or [LRCLIB](https://lrclib.net).
 - **Any window:** full screen on the Edge, or a normal resizable window. Bigger windows fit more widgets.
 
 ## Download
 
-Get the latest `.AppImage` from [Releases](https://github.com/Danii45/Aqua-MD/releases).
+Get `AquaMD-Linux-x86_64.AppImage` from the [latest release](https://github.com/Danii45/Aqua-MD/releases/latest).
 
 1. Download the file.
 2. Right-click it → Properties → Permissions, and tick the box that makes it executable.
@@ -72,11 +73,11 @@ The web version and the iPhone app use the same Client ID with one more redirect
 ```sh
 npm install
 npm start            # run it
-npm run dist         # build dist/AquaMD-<version>-x86_64.AppImage
+npm run dist         # build dist/AquaMD-Linux-x86_64.AppImage
 npm run dist:win     # Windows installer; needs castLabs Electron for win32-x64 unpacked in ../castlabs-win
 npm run dist:mac     # Mac app (zip); needs castLabs Electron for darwin-arm64 in ../castlabs-mac and rcodesign
-node tools/build-apk.js 0.4.0-beta.3 3   # Android APK (see below)
-node tools/build-web.js docs/app 0.4.1 --web   # web version, served by the website
+node tools/build-apk.js 0.5.0-beta.1 4   # Android APK (see below)
+node tools/build-web.js docs/app 0.5.0 --web   # web version, served by the website
 ```
 
 The iPhone app (`ios/`) is a small Swift shell around the web version. GitHub Actions builds the unsigned `.ipa` on a Mac

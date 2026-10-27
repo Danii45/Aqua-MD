@@ -570,3 +570,54 @@ button, input { font: inherit; color: inherit; }
 .stage.tall .w-clock.w-S .hm { font-size: 100px; }
 /* On a phone the panels cover the deck: make them solid enough to read over the bright disc. */
 .stage.tall .panel, .stage.compact .panel { background-color: hsl(calc(var(--h) + 7) 60% 8% / .88); }
+
+/* ---------- songs menu ---------- */
+.sg-head { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 18px; margin-right: 16px; }
+.sg-sub { min-width: 0; font-size: 19px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-body { gap: 4px; padding-top: 10px; }
+.sg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 6px 8px 6px 4px; border-radius: 16px; border: 1.5px solid transparent; transition: background .2s, border-color .3s, box-shadow .3s; }
+.sg-row:hover { background: hsl(var(--h) 80% 22% / .22); }
+.sg-row.now { border-color: var(--lcd-on); background: hsl(var(--lh) 80% 30% / .16); box-shadow: 0 0 0 2px hsl(var(--lh) 100% 78% / .14), 0 0 22px hsl(var(--lh) 100% 72% / .14); }
+.sg-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.sg-main[aria-disabled="true"] { cursor: default; }
+.sg-n { width: 44px; flex: none; text-align: right; font-family: var(--font-dot); font-weight: 900; font-size: 22px; color: var(--lcd-on); opacity: .55; }
+.sg-row.now .sg-n { opacity: 1; text-shadow: 0 0 10px var(--lcd-glow); }
+.sg-art { width: 54px; height: 54px; flex: none; border-radius: 9px; background-color: hsl(var(--h) 60% 30% / .45); background-size: cover; background-position: center; box-shadow: 0 0 0 1px hsl(calc(var(--h) - 5) 100% 80% / .25), 0 4px 10px rgba(0,0,0,.3); }
+.sg-text { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.sg-name { font-size: 22px; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-meta { font-size: 17px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-dur { flex: none; min-width: 52px; text-align: right; font-size: 17px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.sg-row.off .sg-n, .sg-row.off .sg-art, .sg-row.off .sg-name, .sg-row.off .sg-dur { opacity: .38; }
+.sg-row.off .sg-meta { color: #ffcf7a; opacity: .85; }
+.sg-row.nope { animation: nope .36s ease-in-out; }
+@keyframes nope { 20% { transform: translateX(-7px); } 50% { transform: translateX(6px); } 80% { transform: translateX(-3px); } }
+.sg-color { width: 50px; height: 50px; border-radius: 14px; }
+.sg-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px dashed hsl(calc(var(--h) - 5) 100% 85% / .45); }
+.sg-dot.set { border: 2px solid hsl(calc(var(--dh, var(--h)) - 5) 100% 86% / .85); background: radial-gradient(circle at 36% 30%, hsl(var(--dh, var(--h)) 100% 88%), hsl(var(--dh, var(--h)) 90% 56%) 60%, hsl(var(--dh, var(--h)) 85% 40%)); box-shadow: 0 0 10px hsl(var(--dh, var(--h)) 100% 65% / .5); }
+.sg-dot.auto { border: 3px solid transparent; background: radial-gradient(circle, hsl(var(--dh, var(--h)) 95% 62%) 0 52%, transparent 54%) padding-box, conic-gradient(hsl(0 90% 62%), hsl(55 95% 60%), hsl(130 80% 52%), hsl(190 90% 55%), hsl(245 85% 66%), hsl(300 85% 64%), hsl(360 90% 62%)) border-box; }
+.sg-row .swatches { padding: 4px 0 6px 72px; }
+.sg-note { margin: 4px 8px 12px; font-size: 20px; line-height: 1.35; color: var(--ink-dim); }
+.sg-note.center { text-align: center; margin: 14px 8px; }
+.sg-more { align-self: center; margin: 10px 0 16px; }
+
+/* colour picker: Auto (from the cover) and, for songs, "same as the disc" */
+.sw.auto { --sh: 0; border-color: rgba(255,255,255,.75); display: grid; place-items: center;
+  background: conic-gradient(from 200deg, hsl(0 90% 62%), hsl(50 95% 60%), hsl(130 80% 52%), hsl(190 90% 55%), hsl(240 85% 66%), hsl(300 85% 64%), hsl(360 90% 62%)); }
+.sw.auto.on { box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 0 0 4px var(--desk), 0 0 0 7px #fff, 0 0 22px rgba(255,255,255,.4); }
+.sw-a { font-family: var(--font-label); font-size: 11px; letter-spacing: .12em; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.8), 0 0 6px rgba(0,0,0,.5); }
+.sw.same { --sh: var(--h); border-style: dashed; background: hsl(var(--h) 60% 30% / .35); display: grid; place-items: center; }
+.sw-x { font-size: 26px; line-height: 1; color: var(--ink); }
+.mini .auto-dot { position: absolute; right: -5px; bottom: -5px; width: 14px; height: 14px; border-radius: 50%; z-index: 1;
+  background: conic-gradient(hsl(0 90% 62%), hsl(55 95% 60%), hsl(130 80% 52%), hsl(190 90% 55%), hsl(245 85% 66%), hsl(300 85% 64%), hsl(360 90% 62%)); box-shadow: 0 0 0 2px var(--desk); }
+
+/* ---------- Spotify search (Playlists menu) ---------- */
+.pl-search { display: flex; align-items: center; gap: 12px; margin: 14px 22px 4px; padding: 0 10px 0 18px; height: 62px; border-radius: 31px; border: 1.5px solid hsl(calc(var(--h) - 5) 100% 79% / .3); background: hsl(var(--h) 80% 8% / .45); transition: border-color .2s, box-shadow .2s; }
+.pl-search:focus-within { border-color: var(--lcd-on); box-shadow: 0 0 0 3px hsl(var(--lh) 100% 78% / .18); }
+.pl-search[hidden] { display: none; }
+.pl-search svg { width: 26px; height: 26px; flex: none; fill: none; stroke: var(--ink-dim); stroke-width: 2; stroke-linecap: round; }
+.pl-search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; font-size: 21px; }
+.pl-search input::placeholder { color: var(--ink-dim); opacity: .8; }
+.pl-search input::-webkit-search-cancel-button { display: none; }
+.pl-sec { margin: 14px 8px 2px; font-family: var(--font-label); font-weight: 400; font-size: 15px; letter-spacing: .22em; text-transform: uppercase; color: var(--ink-dim); }
+.pl-sec:first-child { margin-top: 4px; }
+.pl-row.album .pl-cover { border-radius: 8px; }

@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('aqua', {
   openDashboard: () => ipcRenderer.invoke('spotify:openDashboard'),
   copy: text => ipcRenderer.invoke('clipboard:write', text),
   lyrics: q => ipcRenderer.invoke('lyrics:find', q),
+  artData: url => ipcRenderer.invoke('art:data', url),
   sysStats: () => ipcRenderer.invoke('sys:stats'),
 
   set: (key, value) => ipcRenderer.invoke('settings:set', key, value),

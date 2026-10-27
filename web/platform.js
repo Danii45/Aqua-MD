@@ -6,6 +6,7 @@
 //                    plays through the Spotify app, on computers through Spotify's Web Playback SDK
 //   lyrics        -> .lrc files picked with the songs, lyrics in the song's tags, or LRCLIB
 import { parseBlob, selectCover } from 'music-metadata';
+import { shapePage, shapeTrack, shapeSearch } from '../lib/spotify-items.js';
 
 /* global __AQUA_VERSION__ */
 const VERSION = typeof __AQUA_VERSION__ === 'string' ? __AQUA_VERSION__ : '0';
@@ -52,7 +53,7 @@ const emit = (ch, payload) => (listeners[ch] || []).forEach(cb => { try { cb(pay
 const DEFAULTS = {
   weather: { name: 'Vaughan, Ontario', lat: 43.8361, lon: -79.4983 },
   volume: 21, shuffle: false, repeat: 'off', colors: {}, recentPlaylists: [], spotify: {}, widgets: null, lastDisc: null,
-  windowMode: 'window', keepAwake: false
+  windowMode: 'window', keepAwake: false, spotifyApp: false, autoColors: false
 };
 const settings = {
   data: Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), (() => { try { return JSON.parse(localStorage.getItem('aqua:settings') || '{}'); } catch (e) { return {}; } })()),
@@ -447,15 +448,32 @@ class SpotifyWeb {
   }
   devices() { return this.api('GET', '/me/player/devices').then(j => (j && j.devices) || []); }
   playback() { return this.api('GET', '/me/player'); }
+  /** offset: a position number, or { uri } / { position } to start on a particular song. */
   playContext(deviceId, contextUri, offset) {
     const body = { context_uri: contextUri };
-    if (Number.isInteger(offset) && offset >= 0) body.offset = { position: offset };
-    return this.api('PUT', '/me/player/play', { query: { device_id: deviceId }, body });
+    if (offset && typeof offset === 'object') body.offset = offset;
+    else if (Number.isInteger(offset) && offset >= 0) body.offset = { position: offset };
+    return this.play(deviceId, body);
+  }
+  play(deviceId, body) { return this.api('PUT', '/me/player/play', { query: { device_id: deviceId }, body }); }
+  /** Up to 50 songs of a playlist from `offset`. Spotify only lists playlists this account made or collaborates on (403 otherwise). */
+  async playlistItems(id, offset) {
+    const j = await this.api('GET', `/playlists/${encodeURIComponent(id)}/items`, { query: { market: 'from_token', limit: 50, offset: offset || 0, additional_types: 'track,episode' } });
+    return shapePage(j, offset || 0);
+  }
+  async trackInfo(uri) {
+    const m = /^spotify:track:([A-Za-z0-9]+)$/.exec(uri || '');
+    if (!m) return null;
+    return shapeTrack(await this.api('GET', `/tracks/${m[1]}`, { query: { market: 'from_token' } }));
+  }
+  /** Songs, albums and playlists matching `q` (Spotify gives at most 10 of each per request). */
+  async search(q) {
+    const j = await this.api('GET', '/search', { query: { q, type: 'track,album,playlist', limit: 10, market: 'from_token' } });
+    return shapeSearch(j);
   }
   async queue() {
     const j = await this.api('GET', '/me/player/queue');
-    const pick = imgs => { const l = (imgs || []).slice().sort((a, b) => (a.width || 640) - (b.width || 640)); const i = l.find(x => (x.width || 640) >= 64) || l[l.length - 1]; return i ? i.url : null; };
-    return ((j && j.queue) || []).slice(0, 8).map(t => ({ title: t.name || '', artist: (t.artists || []).map(a => a.name).join(', ') || (t.show && t.show.name) || '', art: pick((t.album && t.album.images) || t.images), duration: (t.duration_ms || 0) / 1000 }));
+    return ((j && j.queue) || []).slice(0, 20).map(shapeTrack);
   }
   transfer(deviceId, play) { return this.api('PUT', '/me/player', { body: { device_ids: [deviceId], play: !!play } }); }
   shuffle(on, deviceId) { return this.api('PUT', '/me/player/shuffle', { query: { state: on ? 'true' : 'false', device_id: deviceId } }); }
@@ -490,7 +508,7 @@ class Engine {
       p.addListener('not_ready', () => { this.status = 'starting'; this.now = null; hub.pushAccount(); hub.pushNow(); });
       p.addListener('player_state_changed', s => this.onState(s));
       ['initialization_error', 'authentication_error', 'account_error', 'playback_error'].forEach(type => p.addListener(type, e => {
-        if (type === 'playback_error') { emit('spotify:notice', { text: 'Spotify could not play that track' }); return; }
+        if (type === 'playback_error') { hub.rescue(); return; }
         if (type === 'authentication_error') web.access = null;
         this.set('error', { type, message: (e && e.message) || '' });
       }));
@@ -513,6 +531,7 @@ class Engine {
     this.now = { paused: !!s.paused, position: (s.position || 0) / 1000, duration: (s.duration || 0) / 1000, shuffle: !!s.shuffle, repeat: s.repeat_mode || 0,
       title: t.name || '', artist: (t.artists || []).map(a => a.name).join(', '), album: (t.album && t.album.name) || '', art: pickArt(t.album && t.album.images),
       uri: t.uri || '', contextUri: (s.context && s.context.uri) || null, contextName: (s.context && s.context.metadata && s.context.metadata.name) || '', at: Date.now() };
+    if (this.now.uri) hub.lastEngineSong = { uri: this.now.uri, contextUri: this.now.contextUri, shuffle: this.now.shuffle };
     hub.pushNow();
   }
   set(status, error) { this.status = status; this.error = error || null; if (status !== 'ready') { this.now = null; if (status !== 'starting') this.deviceId = null; } hub.pushAccount(); hub.pushNow(); }
@@ -604,7 +623,7 @@ const hub = {
   pushNow() { emit('spotify:state', this.now()); },
   accountState() {
     return Object.assign(web.account(), { engine: { status: engine.status, error: engine.error }, appOpen: remote.state.available,
-      deviceName: remote.state.deviceName || '', platform: PLATFORM, mobile: MOBILE });
+      deviceName: remote.state.deviceName || '', platform: PLATFORM, mobile: MOBILE, useApp: !!settings.get('spotifyApp'), movedToApp: this.usedApp });
   },
   pushAccount() { emit('spotify:account', this.accountState()); },
   lastRemote: '',
@@ -642,8 +661,11 @@ const hub = {
   async control(cmd, arg) {
     try {
       const via = this.via();
-      if (cmd === 'playContext') return await this.playContext(String((arg && arg.uri) || ''), { shuffle: !!(arg && arg.shuffle), total: Number(arg && arg.total) || 0 });
+      if (cmd === 'playContext') return await this.playContext(String((arg && arg.uri) || ''), { shuffle: !!(arg && arg.shuffle), total: Number(arg && arg.total) || 0, track: String((arg && arg.track) || '') });
       if (cmd === 'queue') return { ok: true, items: web.linked ? await web.queue() : [] };
+      if (cmd === 'tracks') return await this.tracks(arg);
+      if (cmd === 'search') return await this.search(arg);
+      if (cmd === 'playTracks') return await this.playTracks(arg);
       if (cmd === 'playlists') return { ok: true, items: await this.playlists(!!(arg && arg.refresh)) };
       engine.activate();
       if (via === 'aqua') {
@@ -663,27 +685,97 @@ const hub = {
       }
       if (via === 'app') return remote.control(cmd, arg);
       if (cmd === 'play' && web.linked) {
-        if (engine.status === 'ready') { await web.transfer(engine.deviceId, true); return { ok: true }; }
-        const dev = (await this.appDevice()) || (await this.wakeApp(''));
-        if (dev) { await web.transfer(dev.id, true); remote.poke(800); return { ok: true }; }
+        const t = await this.target('');
+        if (t) { await web.transfer(t.deviceId, true); if (t.via === 'app') remote.poke(800); return { ok: true }; }
       }
       return { ok: false, error: 'no-player' };
     } catch (e) { return { ok: false, error: e.message || 'failed', status: e.status || 0 }; }
   },
-  async playContext(uri, opts = {}) {
-    if (!/^spotify:(playlist|album|artist|show):[A-Za-z0-9]+$/.test(uri)) return { ok: false, error: 'bad-uri' };
+  usedApp: false,          // a song moved to the Spotify app this session (computers): keep playing there
+  rescuing: false,
+  lastEngineSong: null,
+  preferApp() { return !MOBILE && (this.usedApp || !!settings.get('spotifyApp')); },
+  // Where new music should play: { deviceId, via } or null. Phones: always the Spotify app on this phone.
+  async target(uri) {
+    const engineReady = engine.status === 'ready' && engine.deviceId;
+    if (engineReady && !this.preferApp()) return { deviceId: engine.deviceId, via: 'aqua' };
+    const dev = (await this.appDevice()) || (await this.wakeApp(uri));
+    if (dev) return { deviceId: dev.id, via: 'app' };
+    return engineReady ? { deviceId: engine.deviceId, via: 'aqua' } : null;
+  },
+  // The built-in player couldn't play a song. Songs that aren't on Spotify in this country (or are local files)
+  // get skipped with a note; anything else moves to the Spotify app if it's running, which can play it.
+  async rescue() {
+    const song = this.lastEngineSong;
+    if (this.rescuing) return;
+    if (!song || !song.uri) { emit('spotify:notice', { text: 'Spotify couldn’t play that song' }); return; }
+    this.rescuing = true;
+    try {
+      let info = null;
+      try { info = await web.trackInfo(song.uri); } catch (e) { info = null; }
+      if (info && !info.playable) { emit('spotify:notice', { text: info.why === 'local' ? 'That song is a file on someone’s computer, not on Spotify · skipping' : 'That song isn’t available on Spotify here · skipping' }); return; }
+      const dev = await this.appDevice().catch(() => null);
+      if (!dev) { emit('spotify:notice', { text: 'Aqua MD’s player couldn’t play that song · open the Spotify app to play songs like it' }); return; }
+      await engine.command('pause');
+      const inContext = song.contextUri && /^spotify:(playlist|album|artist|show):[A-Za-z0-9]+$/.test(song.contextUri);
+      try { await web.play(dev.id, inContext ? { context_uri: song.contextUri, offset: { uri: song.uri } } : { uris: [song.uri] }); }
+      catch (e) { if (inContext) await web.play(dev.id, { uris: [song.uri] }); else throw e; }
+      try { await web.shuffle(song.shuffle, dev.id); } catch (e) { /* the song still plays */ }
+      this.usedApp = true; this.pushAccount(); remote.poke(900);
+      emit('spotify:notice', { text: 'Playing in the Spotify app · Aqua MD’s player couldn’t play that song' });
+    } catch (e) { emit('spotify:notice', { text: 'Spotify couldn’t play that song' }); }
+    finally { this.rescuing = false; }
+  },
+  // A random position could land on a song that isn't on Spotify in this country, or a local file; Spotify then says
+  // it "can't play this" and skips on. For playlists Spotify lets us list, pick among songs that can play.
+  async shuffleStart(uri, total) {
+    const m = /^spotify:playlist:([A-Za-z0-9]+)$/.exec(uri);
+    if (m) {
+      try {
+        const at = Math.floor(Math.random() * total);
+        const page = await web.playlistItems(m[1], at - (at % 50));
+        const ok = page.items.filter(x => x.playable && x.uri);
+        if (ok.length) return { uri: ok[Math.floor(Math.random() * ok.length)].uri };
+      } catch (e) { /* not this account's playlist */ }
+    }
+    return { position: Math.floor(Math.random() * total) };
+  },
+  async search(arg) {
+    const q = String((arg && arg.q) || '').trim().slice(0, 200);
+    if (!q) return { ok: true, songs: [], albums: [], playlists: [] };
+    if (!web.linked) return { ok: false, error: 'not-linked' };
+    return Object.assign({ ok: true, q }, await web.search(q));
+  },
+  async playTracks(arg) {
+    const uris = ((arg && arg.uris) || []).map(String).filter(u => /^spotify:(track|episode):[A-Za-z0-9]+$/.test(u)).slice(0, 50);
+    const track = String((arg && arg.track) || '');
+    if (!uris.length || (track && !uris.includes(track))) return { ok: false, error: 'bad-uri' };
     if (!web.linked) return { ok: false, error: 'not-linked' };
     engine.activate();
-    let deviceId = null, via = null;
-    if (engine.status === 'ready' && engine.deviceId) { deviceId = engine.deviceId; via = 'aqua'; }
-    else {
-      const dev = (await this.appDevice()) || (await this.wakeApp(uri));
-      if (!dev) return { ok: false, error: 'no-device' };
-      deviceId = dev.id; via = 'app';
-    }
-    const offset = opts.shuffle && opts.total > 1 ? Math.floor(Math.random() * opts.total) : null;
+    const t = await this.target(track || uris[0]);
+    if (!t) return { ok: false, error: 'no-device' };
+    await web.play(t.deviceId, track ? { uris, offset: { uri: track } } : { uris });
+    if (t.via === 'app') remote.poke(900);
+    return { ok: true, via: t.via };
+  },
+  async tracks(arg) {
+    const id = String((arg && arg.id) || '');
+    if (!/^[A-Za-z0-9]+$/.test(id)) return { ok: false, error: 'bad-id' };
+    if (!web.linked) return { ok: false, error: 'not-linked' };
+    try { return Object.assign({ ok: true }, await web.playlistItems(id, Math.max(0, Math.floor(Number(arg && arg.offset) || 0)))); }
+    catch (e) { return { ok: false, error: e.status === 403 ? 'not-owner' : (e.message || 'failed'), status: e.status || 0 }; }
+  },
+  async playContext(uri, opts = {}) {
+    if (!/^spotify:(playlist|album|artist|show):[A-Za-z0-9]+$/.test(uri)) return { ok: false, error: 'bad-uri' };
+    if (opts.track && !/^spotify:(track|episode):[A-Za-z0-9]+$/.test(opts.track)) return { ok: false, error: 'bad-uri' };
+    if (!web.linked) return { ok: false, error: 'not-linked' };
+    engine.activate();
+    const t = await this.target(uri);
+    if (!t) return { ok: false, error: 'no-device' };
+    const { deviceId, via } = t;
+    const offset = opts.track ? { uri: opts.track } : (opts.shuffle && opts.total > 1 ? await this.shuffleStart(uri, opts.total) : null);
     try { await web.playContext(deviceId, uri, offset); }
-    catch (e) { if (offset != null && e.status === 400) await web.playContext(deviceId, uri, null); else throw e; }
+    catch (e) { if (offset != null && (e.status === 400 || e.status === 404)) await web.playContext(deviceId, uri, null); else throw e; }
     try { await web.shuffle(!!opts.shuffle, deviceId); } catch (e) { /* the song still plays */ }
     if (via === 'app') remote.poke(900);
     return { ok: true, via, shuffle: !!opts.shuffle };
@@ -830,7 +922,7 @@ window.aqua = {
       settings: {
         weather: settings.get('weather'), volume: settings.get('volume'), lastDisc: settings.get('lastDisc'), shuffle: !!settings.get('shuffle'),
         repeat: settings.get('repeat') || 'off', colors: settings.get('colors') || {}, recentPlaylists: settings.get('recentPlaylists') || [], widgets: settings.get('widgets'),
-        startOnLogin: false, appMenu: false, onTop: false, keepAwake: !!settings.get('keepAwake')
+        startOnLogin: false, appMenu: false, onTop: false, keepAwake: !!settings.get('keepAwake'), autoColors: !!settings.get('autoColors')
       },
       discs: library.forRenderer(), spotify: hub.now(), account: hub.accountState(), display: displayInfo(), extensions: [...ALL_EXT]
     };
@@ -876,7 +968,12 @@ window.aqua = {
   },
   sysStats: async () => null,
 
-  set: async (key, value) => { if (Object.prototype.hasOwnProperty.call(DEFAULTS, key) && key !== 'spotify') settings.set(key, value); return true; },
+  set: async (key, value) => {
+    if (!Object.prototype.hasOwnProperty.call(DEFAULTS, key) || key === 'spotify') return false;
+    settings.set(key, value);
+    if (key === 'spotifyApp') { hub.usedApp = false; hub.pushAccount(); }
+    return true;
+  },
   nextScreen: async () => displayInfo(),
   onDisplay: on('window:display'),
   toggleFullscreen: () => setWindowMode(displayInfo().fullscreen ? 'window' : 'full'),

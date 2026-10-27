@@ -112,35 +112,138 @@ const COLORS = {
   purple: { h: 266, lh: 258, name: 'Purple' }
 };
 const COLOR_ORDER = Object.keys(COLORS);
+const AUTO = 'auto';      // the colour of the cover art
+// Colours chosen for discs ('demo', a disc id), playlists ('pl:<id>'), the Spotify disc ('spotify') and single songs
+// ('sp:<spotify uri>' or 't:<song id>'). A song's colour wins over its playlist's or disc's.
 let COLOR_MAP = {};
-const colorName = id => (COLORS[COLOR_MAP[id]] ? COLOR_MAP[id] : 'blue');
-const hueOf = id => COLORS[colorName(id)].h;
+let AUTO_COLORS = false;  // Settings: anything without a chosen colour takes its cover's colour
+const pickOf = id => (id && (COLORS[COLOR_MAP[id]] || COLOR_MAP[id] === AUTO) ? COLOR_MAP[id] : null);
+const colorName = id => pickOf(id) || 'blue';
+const colorLabel = id => { const p = colorName(id); return p === AUTO ? 'Auto, from the cover' : COLORS[p].name; };
+// The display uses a slightly shifted hue (--lh) for each colour; in between the named colours, blend their shifts.
+const LH_OFF = Object.values(COLORS).map(c => ({ h: c.h, o: ((c.lh - c.h + 540) % 360) - 180 })).sort((a, b) => a.h - b.h);
+function lhFor(h) {
+  h = ((h % 360) + 360) % 360;
+  const n = LH_OFF.length;
+  let i = LH_OFF.findIndex(p => p.h > h); if (i < 0) i = 0;
+  const b = LH_OFF[i], a = LH_OFF[(i + n - 1) % n];
+  const span = ((b.h - a.h + 360) % 360) || 360, t = ((h - a.h + 360) % 360) / span;
+  return h + a.o + (b.o - a.o) * t;
+}
+
+/* cover colours: read once per picture, then remembered */
+const ART_HUE = new Map();  // url -> hue (0-360), null (no clear colour), undefined while reading
+let artV = 0;
+function artHue(url) {
+  if (!url) return null;
+  if (ART_HUE.has(url)) return ART_HUE.get(url);
+  ART_HUE.set(url, undefined);
+  readArtHue(url).catch(() => null).then(h => {
+    ART_HUE.set(url, h == null ? null : h); artV++; rackSig = '';
+    render();
+    if (openName === 'songs') paintSongColors();
+    if (openName === 'playlists') renderPlaylists();
+  });
+  return undefined;
+}
+async function readArtHue(url) {
+  let src = url;
+  // Spotify's pictures come through the app itself where it can, so the page may read their pixels.
+  if (/^https?:/.test(url) && api && api.artData) src = (await api.artData(url)) || url;
+  const img = new Image();
+  if (/^https?:/.test(src)) img.crossOrigin = 'anonymous';
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src; });
+  const N = 40, c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0, N, N);
+  return hueFromPixels(g.getImageData(0, 0, N, N).data);
+}
+// The cover's main colour: the strongest band of vivid, mid-bright pixels. Black-and-white covers have none.
+function hueFromPixels(px) {
+  const bins = new Float64Array(36), sx = new Float64Array(36), sy = new Float64Array(36);
+  let seen = 0, vivid = 0;
+  for (let i = 0; i < px.length; i += 4) {
+    const a = px[i + 3] / 255; if (a < 0.5) continue;
+    const r = px[i] / 255, g = px[i + 1] / 255, b = px[i + 2] / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), c = max - min, l = (max + min) / 2;
+    seen++;
+    if (c < 0.1) continue;
+    let h = max === r ? ((g - b) / c) % 6 : max === g ? (b - r) / c + 2 : (r - g) / c + 4;
+    h = (h * 60 + 360) % 360;
+    const sat = c / (1 - Math.abs(2 * l - 1) || 1);
+    const w = c * sat * Math.max(0.05, 1 - Math.abs(l - 0.5) * 1.3);
+    if (c > 0.22) vivid++;
+    const k = Math.floor(h / 10) % 36, rad = h * Math.PI / 180;
+    bins[k] += w; sx[k] += w * Math.cos(rad); sy[k] += w * Math.sin(rad);
+  }
+  if (!seen || vivid / seen < 0.04) return null;
+  let best = -1, bi = 0;
+  for (let k = 0; k < 36; k++) { const v = bins[(k + 35) % 36] + bins[k] + bins[(k + 1) % 36]; if (v > best) { best = v; bi = k; } }
+  let x = 0, y = 0;
+  for (const k of [(bi + 35) % 36, bi, (bi + 1) % 36]) { x += sx[k]; y += sy[k]; }
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+/** { key, h, lh } for a colour choice; for Auto, from the cover (null while the cover is still being read). */
+function themeSpec(pick, art) {
+  if (pick === AUTO) {
+    const h = artHue(art);
+    if (h === undefined) return null;
+    if (h === null) return { key: 'blue', h: COLORS.blue.h, lh: COLORS.blue.lh };
+    const r = Math.round(h);
+    return { key: 'auto:' + r, h: r, lh: lhFor(r), auto: true };
+  }
+  const c = COLORS[pick] ? pick : 'blue';
+  return { key: c, h: COLORS[c].h, lh: COLORS[c].lh };
+}
+/** Hue for a small disc picture in the rack and menus. */
+function hueOf(id, art) {
+  const p = pickOf(id) || (AUTO_COLORS ? AUTO : 'blue');
+  if (p !== AUTO) return COLORS[p].h;
+  const h = artHue(art);
+  return h == null ? COLORS.blue.h : Math.round(h);
+}
 let themeNow = 'blue', hueH = 214, hueL = 192;
 // Moves the whole app to a colour, taking the short way round the colour wheel.
-function applyTheme(name) {
-  if (name === themeNow) return;
-  themeNow = name;
-  const c = COLORS[name] || COLORS.blue;
+function applyTheme(spec) {
+  if (!spec || spec.key === themeNow) return;
+  themeNow = spec.key;
   const arc = (from, to) => from + ((((to - from) % 360) + 540) % 360 - 180);
-  hueH = arc(hueH, c.h); hueL = arc(hueL, c.lh);
+  hueH = arc(hueH, spec.h); hueL = arc(hueL, spec.lh);
   root.style.setProperty('--h', hueH.toFixed(1));
   root.style.setProperty('--lh', hueL.toFixed(1));
-  root.dataset.color = name;
+  root.dataset.color = spec.auto ? AUTO : spec.key;
 }
+/** name: a colour, 'auto', or '' to clear a song's own colour (it then follows its disc or playlist). */
 function setColor(id, name) {
-  if (!COLORS[name]) return;
-  if (name === 'blue') delete COLOR_MAP[id]; else COLOR_MAP[id] = name;
+  if (!id || (name && !COLORS[name] && name !== AUTO)) return;
+  // Blue is the default for discs and playlists; a song keeps blue as its own choice.
+  if (!name || (name === 'blue' && !isSongKey(id))) delete COLOR_MAP[id]; else COLOR_MAP[id] = name;
   COLOR_MAP = Object.assign({}, COLOR_MAP);
   if (api) api.set('colors', COLOR_MAP);
   rackSig = '';
   render();
   if (!plPanel.hidden) renderPlaylists();
   if (!settingsEl.hidden) renderDiscList();
+  if (openName === 'songs') renderSongs();
 }
-function swatchRow(id) {
+const isSongKey = id => /^(sp|t):/.test(id || '');
+function swatchRow(id, opts) {
   const row = el('div', 'swatches');
+  const cur = isSongKey(id) ? pickOf(id) : colorName(id);
+  if (opts && opts.song) {
+    // A song with no colour of its own follows its disc or playlist.
+    const b = btn('sw same' + (!cur ? ' on' : ''), null, { act: 'color', id, color: '' });
+    b.setAttribute('aria-label', 'Same as the disc'); b.title = 'Same as the disc';
+    b.append(el('span', 'sw-x', '='));
+    row.append(b);
+  }
+  const auto = btn('sw auto' + (cur === AUTO ? ' on' : ''), null, { act: 'color', id, color: AUTO });
+  auto.setAttribute('aria-label', 'Auto: the colour of the cover'); auto.title = 'Auto: the colour of the cover';
+  auto.append(el('span', 'sw-a', 'AUTO'));
+  row.append(auto);
   for (const name of COLOR_ORDER) {
-    const b = btn('sw' + (colorName(id) === name ? ' on' : ''), null, { act: 'color', id, color: name });
+    const b = btn('sw' + (cur === name ? ' on' : ''), null, { act: 'color', id, color: name });
     b.style.setProperty('--sh', COLORS[name].h);
     b.setAttribute('aria-label', COLORS[name].name);
     b.title = COLORS[name].name;
@@ -152,9 +255,21 @@ function swatchRow(id) {
 /* ---------- clock ---------- */
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+let dateKey = '';
 function tick() {
   const d = new Date();
-  $('date').textContent = `${DAYS[d.getDay()]} · ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+  // The full month when it fits next to the buttons, else a short one ("Oct 27").
+  const key = `${d.toDateString()}|${geoKey}`;
+  if (key !== dateKey) {
+    dateKey = key;
+    const de = $('date'), row = de.parentElement, stage = $('stage');
+    const full = `${DAYS[d.getDay()]} · ${MONTHS[d.getMonth()]} ${d.getDate()}`, short = `${DAYS[d.getDay()]} · ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+    const over = () => de.scrollWidth > de.clientWidth + 1 || row.scrollWidth > row.clientWidth + 1;
+    stage.classList.remove('tight');
+    de.textContent = full;
+    if (over()) de.textContent = short;
+    if (over()) { stage.classList.add('tight'); de.textContent = full; if (over()) de.textContent = short; }
+  }
   for (const w of INST) if (w.tick) w.tick(d);
 }
 
@@ -246,12 +361,33 @@ function spPos() {
   if (SP.status === 'Playing') p += (Date.now() - (SP.positionAt || Date.now())) / 1000;
   return SP.length ? Math.min(p, SP.length) : Math.max(0, p);
 }
+// The colour for what's in the deck: the song's own, else its playlist's, else the disc's; Auto reads the cover.
 function themeFor() {
-  if (!S.inserted && !S.busy) return 'blue';
+  if (!S.inserted && !S.busy) return themeSpec('blue');
   const d = disc();
-  if (!d) return 'blue';
-  if (d.id === 'spotify' && SP.contextUri) { const p = playlistByUri(SP.contextUri); if (p) return colorName('pl:' + p.id); }
-  return colorName(d.id);
+  if (!d) return themeSpec('blue');
+  const t = S.inserted ? track() : null;
+  const art = (t && t.art) || d.art || null;
+  const ids = [songKey(d, t)];
+  if (d.id === 'spotify' && SP.contextUri) { const p = playlistByUri(SP.contextUri); if (p) ids.push('pl:' + p.id); }
+  ids.push(d.id);
+  for (const id of ids) { const p = pickOf(id); if (p) return themeSpec(p, art); }
+  return themeSpec(AUTO_COLORS ? AUTO : 'blue', art);
+}
+/** Spotify URI for a song id as players report it (MPRIS uses /com/spotify/track/<id>). */
+function spUri(id) {
+  if (!id) return '';
+  if (/^spotify:(track|episode):[A-Za-z0-9]+$/.test(id)) return id;
+  const m = /\/com\/spotify\/(track|episode)\/([A-Za-z0-9]+)/.exec(id);
+  return m ? `spotify:${m[1]}:${m[2]}` : '';
+}
+/** Colour key for a song: 'sp:<uri>' for Spotify, 't:<id>' for your own files, '<disc>#<n>' for the demo. */
+function songKey(d, t) {
+  if (!d || !t) return null;
+  if (d.kind === 'spotify') { const u = spUri(SP.trackId); return u ? 'sp:' + u : null; }
+  if (t.id) return 't:' + t.id;
+  const i = d.tracks.indexOf(t);
+  return i >= 0 ? `t:${d.id}#${i}` : null;
 }
 
 /* ---------- play order: shuffle and loop ---------- */
@@ -423,7 +559,7 @@ function spotifyBlocker() {
   if (eng === 'unsupported') return ['SPOTIFY', 'Pick a playlist, or play something in Spotify'];
   if (ACCOUNT.linked && eng === 'starting') return ['STARTING', 'Getting Spotify’s player ready'];
   if (ACCOUNT.linked && eng === 'error' && !SP.appOpen) return ['NO SPOTIFY', 'Built-in player unavailable · see Settings'];
-  return ['NO SPOTIFY', 'Open the Spotify app on this PC'];
+  return ['NO SPOTIFY', PLATFORM === 'linux' ? 'Open the Spotify app, or open.spotify.com in a browser' : 'Open the Spotify app on this PC'];
 }
 function spotifyMissing() { const [a, b] = spotifyBlocker(); setMode('msg', a, b, 3800); }
 const spotifyVol = () => SP.via === 'aqua' ? volGain() : S.vol / 30;
@@ -777,7 +913,7 @@ function render() {
   else state = S.playing ? 'PLAY' : (pos > 0.05 ? 'PAUSE' : 'STOP');
   stateInd.textContent = state;
   if (!on) trkNo.textContent = 'TRACK --/--';
-  else if (isSpot()) trkNo.textContent = SP.via === 'aqua' ? 'BUILT-IN' : (SP.via === 'app' ? 'SPOTIFY APP' : 'TRACK --');
+  else if (isSpot()) trkNo.textContent = SP.via === 'aqua' ? 'BUILT-IN' : (SP.via === 'app' ? (SP.web ? 'WEB PLAYER' : 'SPOTIFY APP') : 'TRACK --');
   else trkNo.textContent = `TRACK ${pad2(S.ti + 1)}/${pad2(d.tracks.length)}`;
 
   playBtn.classList.toggle('lit', S.playing);
@@ -788,6 +924,7 @@ function render() {
   if (L.mode === 'track') trackText();
   paintLabel(); renderRack();
   if (plPanel && !plPanel.hidden) markActivePlaylist();
+  if (openName === 'songs') songsTick();
   renderWidgets();
   // The Android app shows a notification and keeps playing in the background while your own music plays.
   if (api && api.nowPlaying) {
@@ -803,32 +940,35 @@ function chip(cls, iconEl, name, small) {
   const ct = el('span', 'ct'); ct.append(el('b', '', name), el('small', '', small));
   b.append(iconEl, ct); return b;
 }
-function miniFor(cls, art, id) {
+// hueArt: the cover an Auto colour comes from, when the mini doesn't show it itself.
+function miniFor(cls, art, id, hueArt) {
   const m = el('span', 'mini ' + cls + (art ? ' has-art' : ''));
   if (art) m.style.backgroundImage = `url("${art}"), var(--gen-mini)`;
-  if (id) m.style.setProperty('--dh', hueOf(id));
+  if (id) m.style.setProperty('--dh', hueOf(id, hueArt || art));
+  if (/\bauto\b/.test(cls)) m.append(el('i', 'auto-dot'));
   return m;
 }
+const autoCls = id => (pickOf(id) === AUTO || (!pickOf(id) && AUTO_COLORS && !isSongKey(id)) ? 'auto' : '');
 function renderRack() {
   const active = S.inserted ? S.discId : '';
   const spLive = SP.via && SP.status === 'Playing' && active !== 'spotify' && !(disc() && disc().playlist && S.inserted);
-  const sig = [active, SP.available, spLive, SP.art || '', ACCOUNT.linked, JSON.stringify(COLOR_MAP),
+  const sig = [active, SP.available, spLive, SP.art || '', ACCOUNT.linked, JSON.stringify(COLOR_MAP), AUTO_COLORS, artV,
     ...RECENTS.map(p => p.id), ...FILES.map(d => d.id + ':' + d.tracks.length)].join('|');
   if (sig === rackSig) return;
   rackSig = sig;
   const kids = [el('span', 'rack-label', 'DISCS')];
-  const sp = chip((active === 'spotify' ? 'active' : '') + (SP.available ? '' : ' dim'), miniFor(spLive ? 'live' : '', SP.art, 'spotify'), 'Spotify',
+  const sp = chip((active === 'spotify' ? 'active' : '') + (SP.available ? '' : ' dim'), miniFor((spLive ? 'live ' : '') + autoCls('spotify'), SP.art, 'spotify'), 'Spotify',
     !SP.available ? (ACCOUNT.linked ? 'Starting' : 'Set up') : (spLive ? 'Playing now' : 'Now playing'));
   sp.dataset.disc = 'spotify'; kids.push(sp);
   const pl = chip('add', el('span', 'plus', '♪'), 'Playlists', ACCOUNT.linked ? 'Your Spotify' : 'Connect first');
   pl.dataset.act = 'playlists'; kids.push(pl);
   for (const p of RECENTS) {
     const d = plDisc(p);
-    const b = chip(active === d.id ? 'active' : '', miniFor('', d.art, d.id), d.name, d.total != null ? plural(d.total) : 'Playlist');
+    const b = chip(active === d.id ? 'active' : '', miniFor(autoCls(d.id), d.art, d.id), d.name, d.total != null ? plural(d.total) : 'Playlist');
     b.dataset.disc = d.id; kids.push(b);
   }
   for (const d of FILES) {
-    const b = chip(active === d.id ? 'active' : '', miniFor('', d.art, d.id), d.name, plural(d.tracks.length));
+    const b = chip(active === d.id ? 'active' : '', miniFor(autoCls(d.id), d.art, d.id), d.name, plural(d.tracks.length));
     b.dataset.disc = d.id; kids.push(b);
   }
   const demo = chip(active === 'demo' ? 'active' : '', miniFor('', null, 'demo'), DEMO.name, plural(DEMO.tracks.length));
@@ -1318,7 +1458,7 @@ function upNext() {
   if (d.kind === 'spotify') {
     if (SPQ.state === 'unlinked') return { msg: 'Connect Spotify in Settings to see the queue.' };
     if (SPQ.state === 'loading' && !SPQ.items) return { msg: 'Loading the queue…' };
-    if (SPQ.items && SPQ.items.length) return { items: SPQ.items };
+    if (SPQ.items && SPQ.items.length) return { items: SPQ.items.slice(0, 8) };
     return { msg: SP.via ? 'Nothing queued after this song.' : 'Start playing to see what’s next.' };
   }
   const items = [];
@@ -1525,9 +1665,9 @@ wEdit.addEventListener('click', e => {
   saveSide();
 });
 
-/* ---------- side panels (settings, playlists) ---------- */
-const settingsEl = $('settings'), plPanel = $('playlists'), s1 = $('s1');
-const PANELS = { settings: settingsEl, playlists: plPanel };
+/* ---------- side panels (settings, playlists, songs) ---------- */
+const settingsEl = $('settings'), plPanel = $('playlists'), sgPanel = $('songs'), s1 = $('s1');
+const PANELS = { settings: settingsEl, playlists: plPanel, songs: sgPanel };
 let openName = null;
 function openPanel(name) {
   const p = PANELS[name]; if (!p) return;
@@ -1535,6 +1675,7 @@ function openPanel(name) {
   openName = name;
   if (name === 'settings') { renderWidgetEditor(); renderDiscList(); updateScreenNote(); renderAccount(); $('wxPlace').textContent = wxLoc.name; }
   if (name === 'playlists') { renderPlaylists(); if (ACCOUNT.linked && (!PLAYLISTS || Date.now() - PL_AT > 5 * 60e3)) loadPlaylists(false); }
+  if (name === 'songs') openSongs();
   s1.classList.add('away');
   p.hidden = false;
   requestAnimationFrame(() => p.classList.add('open'));
@@ -1552,6 +1693,9 @@ $('plBtn').addEventListener('click', () => openName === 'playlists' ? closePanel
 $('setDone').addEventListener('click', closePanel);
 $('plDone').addEventListener('click', closePanel);
 $('plRefresh').addEventListener('click', () => loadPlaylists(true));
+$('sgBtn').addEventListener('click', () => openName === 'songs' ? closePanel() : openPanel('songs'));
+$('sgDone').addEventListener('click', closePanel);
+$('sgNow').addEventListener('click', () => markNowSong(true));
 
 /* ---------- playlists panel ---------- */
 const plBody = $('plBody');
@@ -1579,11 +1723,13 @@ function plMessage(html, buttons) {
   return box;
 }
 function renderPlaylists() {
+  $('plSearch').hidden = !ACCOUNT.linked;
   if (!ACCOUNT.linked) {
     plBody.replaceChildren(plMessage('<b>Connect Spotify to see your playlists here.</b><br>It’s a one-time setup in Settings and takes about two minutes.',
       [btn('sbtn primary', 'Open Settings', { act: 'settings' })]));
     return;
   }
+  if (SEARCH.q) { renderSearch(); return; }
   if (!PLAYLISTS) {
     plBody.replaceChildren(PL_STATE === 'error'
       ? plMessage(PL_ERR, [btn('sbtn', 'Try again', { act: 'reload' })])
@@ -1592,7 +1738,12 @@ function renderPlaylists() {
   }
   if (!PLAYLISTS.length) { plBody.replaceChildren(plMessage('<b>No playlists yet.</b><br>Make one in Spotify, then press Refresh.')); return; }
   const keep = plBody.scrollTop;
-  const rows = PLAYLISTS.map(p => {
+  const rows = PLAYLISTS.map(playlistRow);
+  plBody.replaceChildren(...rows);
+  plBody.scrollTop = keep;
+  markActivePlaylist();
+}
+function playlistRow(p) {
     const id = 'pl:' + p.id;
     const row = el('div', 'pl-row');
     row.dataset.id = id;
@@ -1605,8 +1756,8 @@ function renderPlaylists() {
     text.append(el('span', 'pl-name', p.name), el('span', 'pl-meta', meta || 'Playlist'));
     main.append(cover, text);
     const cbtn = btn('pl-color', null, { act: 'swatch', id });
-    cbtn.setAttribute('aria-label', `Colour: ${COLORS[colorName(id)].name}`);
-    cbtn.append(miniFor('', null, id));
+    cbtn.setAttribute('aria-label', `Colour: ${colorLabel(id)}`);
+    cbtn.append(miniFor(autoCls(id), null, id, p.image));
     const sbtn = btn('pl-shuf', null, { act: 'shuffle', pid: p.id });
     sbtn.setAttribute('aria-label', `Shuffle play ${p.name}`);
     sbtn.title = 'Shuffle play';
@@ -1614,10 +1765,71 @@ function renderPlaylists() {
     row.append(main, sbtn, cbtn);
     if (openSwatch === id) row.append(swatchRow(id));
     return row;
-  });
-  plBody.replaceChildren(...rows);
-  plBody.scrollTop = keep;
+}
+
+/* search (top of the Playlists menu) */
+const plQuery = $('plQuery'), plClear = $('plClear');
+const SEARCH = { q: '', results: null, state: 'idle', seq: 0, shown: '' };
+let searchTimer = 0;
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+plQuery.addEventListener('input', () => { plClear.hidden = !plQuery.value; clearTimeout(searchTimer); searchTimer = setTimeout(() => runSearch(plQuery.value), 380); });
+$('plSearch').addEventListener('submit', e => { e.preventDefault(); clearTimeout(searchTimer); runSearch(plQuery.value, true); plQuery.blur(); });
+plClear.addEventListener('click', () => { plQuery.value = ''; plClear.hidden = true; clearTimeout(searchTimer); runSearch(''); plQuery.focus(); });
+async function runSearch(q, again) {
+  q = String(q || '').trim();
+  if (q === SEARCH.q && !again && SEARCH.state !== 'error') return;
+  SEARCH.q = q; const seq = ++SEARCH.seq;
+  if (!q) { SEARCH.results = null; SEARCH.state = 'idle'; renderPlaylists(); return; }
+  if (!api || !ACCOUNT.linked) { SEARCH.state = 'unlinked'; renderPlaylists(); return; }
+  SEARCH.state = 'loading'; renderPlaylists();
+  const r = await api.spotify('search', { q });
+  if (seq !== SEARCH.seq) return;
+  SEARCH.results = r && r.ok ? r : null; SEARCH.state = r && r.ok ? 'ok' : 'error';
+  renderPlaylists();
+}
+function renderSearch() {
+  const R = SEARCH.results, q = esc(SEARCH.q);
+  if (SEARCH.state === 'loading' && (!R || R.q !== SEARCH.q)) { plBody.replaceChildren(plMessage(`Searching Spotify for “${q}”…`)); return; }
+  if (SEARCH.state === 'error') { plBody.replaceChildren(plMessage('Search didn’t work. Check your internet connection.', [btn('sbtn', 'Try again', { act: 'research' })])); return; }
+  if (!R) return;
+  if (!R.songs.length && !R.albums.length && !R.playlists.length) { plBody.replaceChildren(plMessage(`Nothing on Spotify for “${q}”.`)); return; }
+  const kids = [];
+  if (R.songs.length) {
+    kids.push(el('h3', 'pl-sec', 'Songs'));
+    R.songs.forEach((x, i) => kids.push(songRow(Object.assign({ n: i + 1, key: x.playable && x.uri ? 'sp:' + x.uri : null }, x), { act: 'ssong', uri: x.uri }, openSwatch)));
+  }
+  if (R.albums.length) {
+    kids.push(el('h3', 'pl-sec', 'Albums'));
+    for (const a of R.albums) {
+      const row = el('div', 'pl-row album');
+      const main = btn('pl-main', null, { act: 'salbum', uri: a.uri });
+      const cover = el('span', 'pl-cover'); if (a.art) cover.style.backgroundImage = `url("${a.art}"), var(--gen)`;
+      const text = el('span', 'pl-text');
+      text.append(el('span', 'pl-name', a.name), el('span', 'pl-meta', ['Album', a.artist, a.year].filter(Boolean).join(' · ')));
+      main.append(cover, text); row.append(main); kids.push(row);
+    }
+  }
+  if (R.playlists.length) { kids.push(el('h3', 'pl-sec', 'Playlists')); R.playlists.forEach(p => kids.push(playlistRow(p))); }
+  const fresh = SEARCH.shown !== R.q;
+  const keep = plBody.scrollTop;
+  plBody.replaceChildren(...kids);
+  plBody.scrollTop = fresh ? 0 : keep;
+  SEARCH.shown = R.q;
   markActivePlaylist();
+}
+// Search songs play as a list (next and back move through the results); albums play like a disc of Spotify.
+async function playFromSearch(kind, uri, title) {
+  if (!ACCOUNT.linked || S.busy) return;
+  const R = SEARCH.results; if (!R) return;
+  if (LAYOUT === 'tall' || LAYOUT === 'compact') closePanel();
+  if (!S.inserted || S.discId !== 'spotify') { await loadDisc('spotify', false); if (S.discId !== 'spotify' || !S.inserted) return; }
+  setMode('msg', 'LOADING', title || '', 0);
+  const r = kind === 'song'
+    ? await spotify('playTracks', { uris: R.songs.filter(x => x.playable && x.uri).map(x => x.uri), track: uri })
+    : await spotify('playContext', { uri });
+  if (r && r.ok) { S.playing = true; setMode('track'); }
+  else setMode('msg', 'SPOTIFY', playErrorText(r), 4200);
+  render();
 }
 function markActivePlaylist() {
   const d = disc();
@@ -1629,10 +1841,15 @@ plBody.addEventListener('click', e => {
   const act = b.dataset.act;
   if (act === 'settings') openPanel('settings');
   else if (act === 'reload') loadPlaylists(true);
-  else if (act === 'swatch') { openSwatch = openSwatch === b.dataset.id ? null : b.dataset.id; renderPlaylists(); }
+  else if (act === 'swatch') { const k = b.dataset.id || b.dataset.key; openSwatch = openSwatch === k ? null : k; renderPlaylists(); }
   else if (act === 'color') { setColor(b.dataset.id, b.dataset.color); }
+  else if (act === 'research') runSearch(plQuery.value, true);
+  else if (act === 'ssong' || act === 'salbum') {
+    if (b.getAttribute('aria-disabled') === 'true') { const row = b.closest('.sg-row'); if (row) { row.classList.remove('nope'); void row.offsetWidth; row.classList.add('nope'); } return; }
+    playFromSearch(act === 'ssong' ? 'song' : 'album', b.dataset.uri, (b.querySelector('.sg-name, .pl-name') || {}).textContent);
+  }
   else if (act === 'play' || act === 'shuffle') {
-    const p = (PLAYLISTS || []).find(x => x.id === b.dataset.pid); if (!p) return;
+    const p = (PLAYLISTS || []).find(x => x.id === b.dataset.pid) || (SEARCH.results && SEARCH.results.playlists.find(x => x.id === b.dataset.pid)); if (!p) return;
     const d = plDisc(p);
     const shuffle = act === 'shuffle';
     // On a phone the list covers the deck, so get out of the way once a playlist is picked.
@@ -1645,6 +1862,213 @@ plBody.addEventListener('click', e => {
     loadDisc(d.id, false, { shuffle });
   }
 });
+
+/* ---------- songs panel ---------- */
+// Lists the songs on the disc in the deck, or of the Spotify playlist that's playing, to scroll through and pick
+// from. Songs Spotify can't play here are greyed out with the reason. Each song can have its own colour.
+const sgBody = $('sgBody'), sgSub = $('sgSub');
+const SONG_LISTS = new Map();   // playlist id -> { items, total, more, loading, error, at }
+const SGQ = { items: null, state: 'idle', at: 0 };
+let sgSwatch = null, sgKey = '', sgNowSig = '';
+const WHY_TEXT = {
+  local: 'A file on someone’s computer, not on Spotify', gone: 'Removed from Spotify', market: 'Not available in your country',
+  explicit: 'Hidden by your explicit-content setting', product: 'Needs Spotify Premium'
+};
+function songSource() {
+  const d = S.inserted ? disc() : null;
+  if (!d) return { kind: 'none', key: 'none' };
+  if (d.kind !== 'spotify') return { kind: 'local', key: 'disc:' + d.id, d };
+  if (!ACCOUNT.linked) return { kind: 'unlinked', key: 'unlinked', d };
+  let pid = d.playlist ? d.pid : null, uri = d.playlist ? d.uri : null, name = d.playlist ? d.name : '';
+  if (!pid && SP.contextUri) {
+    const m = /^spotify:playlist:([A-Za-z0-9]+)$/.exec(SP.contextUri);
+    if (m) { pid = m[1]; uri = SP.contextUri; const p = playlistByUri(uri); name = (p && p.name) || SP.contextName || 'Playlist'; }
+  }
+  if (pid) return { kind: 'playlist', key: 'pl:' + pid, pid, uri, name, d };
+  const ctx = SP.contextUri && /^spotify:(album|artist|show):[A-Za-z0-9]+$/.test(SP.contextUri) ? SP.contextUri : null;
+  return { kind: 'queue', key: 'queue', d, uri: ctx, name: SP.contextName || '' };
+}
+function openSongs() {
+  const src = songSource();
+  if (src.kind === 'playlist') { const L = SONG_LISTS.get(src.pid); if (L && !L.loading && Date.now() - (L.at || 0) > 10 * 60e3) SONG_LISTS.delete(src.pid); }
+  if (src.kind === 'queue') loadQueue(true);
+  sgKey = '';
+  renderSongs();
+  requestAnimationFrame(() => markNowSong(true));
+}
+async function loadSongPage(pid) {
+  let L = SONG_LISTS.get(pid);
+  if (!L) { L = { items: [], total: null, more: true, loading: false, error: '', at: 0 }; SONG_LISTS.set(pid, L); }
+  if (L.loading || !L.more || !api) return;
+  L.loading = true; L.error = '';
+  const r = await api.spotify('tracks', { id: pid, offset: L.items.length });
+  L.loading = false;
+  if (r && r.ok) {
+    const got = r.items || [];
+    L.items = L.items.concat(got); L.total = r.total; L.more = !!r.more && got.length > 0; L.at = Date.now();
+  } else {
+    L.error = r && r.error === 'not-owner' ? 'not-owner' : 'failed';
+    if (L.error === 'not-owner') { L.more = false; L.at = Date.now(); loadQueue(true); }
+  }
+  if (openName === 'songs') renderSongs();
+}
+async function loadQueue(force) {
+  if (!api || !ACCOUNT.linked || SGQ.state === 'loading') return;
+  if (!force && SGQ.items && Date.now() - SGQ.at < 4000) return;
+  SGQ.state = 'loading';
+  const r = await api.spotify('queue');
+  SGQ.items = r && r.ok ? (r.items || []) : null; SGQ.state = r && r.ok ? 'ok' : 'error'; SGQ.at = Date.now();
+  if (openName === 'songs') renderSongs();
+}
+function songHue(key, art) {
+  const p = pickOf(key);
+  if (!p) return null;
+  if (p !== AUTO) return COLORS[p].h;
+  const h = artHue(art);
+  return h == null ? COLORS.blue.h : Math.round(h);
+}
+// it: { n, title, artist, art, duration, playable, why, uri, key }; data: what tapping it does
+function songRow(it, data, openKey) {
+  if (openKey === undefined) openKey = sgSwatch;
+  const row = el('div', 'sg-row' + (it.playable ? '' : ' off'));
+  if (it.uri) row.dataset.uri = it.uri;
+  if (data.i != null) row.dataset.i = data.i;
+  if (it.key) { row.dataset.key = it.key; row.dataset.art = it.art || ''; }
+  const main = btn('sg-main', null, data);
+  if (!it.playable || data.act === 'none') main.setAttribute('aria-disabled', 'true');
+  const art = el('span', 'sg-art'); if (it.art) art.style.backgroundImage = `url("${it.art}")`;
+  const text = el('span', 'sg-text');
+  text.append(el('span', 'sg-name', it.title), el('span', 'sg-meta', it.playable ? (it.artist || '') : (WHY_TEXT[it.why] || 'Spotify can’t play this one')));
+  main.append(el('span', 'sg-n', it.n != null ? pad2(it.n) : '·'), art, text, el('span', 'sg-dur', it.duration ? fmt(it.duration) : ''));
+  row.append(main);
+  if (it.key) {
+    const c = btn('pl-color sg-color', null, { act: 'swatch', key: it.key });
+    c.setAttribute('aria-label', `Colour for ${it.title}: ${pickOf(it.key) ? colorLabel(it.key) : 'same as the disc'}`);
+    c.title = 'Colour for this song';
+    const dot = el('span', 'sg-dot' + (pickOf(it.key) ? ' set' : '') + (pickOf(it.key) === AUTO ? ' auto' : ''));
+    const h = songHue(it.key, it.art); if (h != null) dot.style.setProperty('--dh', h);
+    c.append(dot);
+    row.append(c);
+    if (openKey === it.key) row.append(swatchRow(it.key, { song: true }));
+  }
+  return row;
+}
+function paintSongColors() {
+  sgBody.querySelectorAll('.sg-row[data-key]').forEach(r => {
+    const h = songHue(r.dataset.key, r.dataset.art || null), dot = r.querySelector('.sg-dot');
+    if (dot && h != null) dot.style.setProperty('--dh', h);
+  });
+}
+function spRow(x, n, ctx) {
+  return songRow(Object.assign({ n, key: x.playable && x.uri ? 'sp:' + x.uri : null }, x), ctx ? { act: 'song', uri: x.uri, ctx } : { act: 'none' });
+}
+function renderSongs() {
+  const src = songSource();
+  if (src.key !== sgKey) { sgKey = src.key; sgSwatch = null; sgBody.scrollTop = 0; }
+  sgNowSig = nowSig();
+  const keep = sgBody.scrollTop;
+  const kids = [];
+  sgSub.textContent = '';
+  if (src.kind === 'none') {
+    sgBody.replaceChildren(plMessage('Put a disc in, or pick a playlist, to see its songs here.', [btn('sbtn', 'Playlists', { act: 'playlists' })]));
+    return;
+  }
+  if (src.kind === 'unlinked') {
+    sgBody.replaceChildren(plMessage('<b>Connect Spotify to see your playlists’ songs here.</b><br>It’s a one-time setup in Settings.', [btn('sbtn primary', 'Open Settings', { act: 'settings' })]));
+    return;
+  }
+  if (src.kind === 'local') {
+    const d = src.d;
+    sgSub.textContent = `${d.name} · ${plural(d.tracks.length)}`;
+    d.tracks.forEach((t, i) => kids.push(songRow({ n: i + 1, title: t.title, artist: t.artist || '', art: t.art || d.art || null, duration: t.duration || 0, playable: true,
+      key: songKey(d, t) }, { act: 'song', i })));
+  } else if (src.kind === 'playlist') {
+    const L = SONG_LISTS.get(src.pid);
+    if (!L) { loadSongPage(src.pid); sgBody.replaceChildren(plMessage('Loading the songs…')); sgSub.textContent = src.name; return; }
+    sgSub.textContent = src.name + (L.total != null && L.error !== 'not-owner' ? ` · ${plural(L.total)}` : '');
+    if (L.error === 'not-owner') {
+      kids.push(el('p', 'sg-note', 'Spotify only lets apps list the songs of playlists you made. Here’s what’s coming up next:'));
+      queueRows(kids, src.uri);
+    } else {
+      L.items.forEach((x, i) => kids.push(spRow(x, i + 1, src.uri)));
+      if (L.error === 'failed') kids.push(plMessage('Couldn’t load the songs. Check your internet connection.', [btn('sbtn', 'Try again', { act: 'retry', pid: src.pid })]));
+      else if (L.loading) kids.push(el('p', 'sg-note center', 'Loading more…'));
+      else if (L.more) kids.push(btn('sbtn sg-more', 'Load more', { act: 'more', pid: src.pid }));
+      else if (!L.items.length) kids.push(plMessage('This playlist is empty.'));
+    }
+  } else {
+    sgSub.textContent = src.name ? `${src.name} · up next` : 'Up next';
+    if (!SP.via) kids.push(plMessage('Start playing something in Spotify to see what’s coming up, or pick a playlist.', [btn('sbtn', 'Playlists', { act: 'playlists' })]));
+    else queueRows(kids, src.uri);
+  }
+  sgBody.replaceChildren(...kids);
+  sgBody.scrollTop = keep;
+  markNowSong(false);
+}
+function queueRows(kids, ctx) {
+  const t = spTrack();
+  if (t) kids.push(spRow({ uri: spUri(SP.trackId), title: t.title, artist: t.artist, art: t.art, duration: t.duration, playable: true }, null, null));
+  if (!SGQ.items) { kids.push(el('p', 'sg-note center', SGQ.state === 'error' ? 'Couldn’t load what’s next.' : 'Loading what’s next…')); if (SGQ.state !== 'loading') loadQueue(false); return; }
+  if (!SGQ.items.length) { kids.push(el('p', 'sg-note center', 'Nothing coming up after this song.')); return; }
+  SGQ.items.forEach((x, i) => kids.push(spRow(x, i + 1, ctx)));
+}
+const nowSig = () => `${S.inserted ? S.discId : ''}|${S.ti}|${SP.trackId || ''}|${SP.title || ''}`;
+function markNowSong(scroll) {
+  if (openName !== 'songs') return;
+  const src = songSource();
+  let cur = null;
+  if (src.kind === 'local') cur = sgBody.querySelector(`.sg-row[data-i="${S.ti}"]`);
+  else if (SP.title) {
+    const u = spUri(SP.trackId), rows = [...sgBody.querySelectorAll('.sg-row')];
+    cur = (u && rows.find(r => r.dataset.uri === u)) || rows.find(r => (r.querySelector('.sg-name') || {}).textContent === SP.title) || null;
+  }
+  sgBody.querySelectorAll('.sg-row.now').forEach(r => { if (r !== cur) r.classList.remove('now'); });
+  if (cur) { cur.classList.add('now'); if (scroll) cur.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' }); }
+}
+function songsTick() {
+  const src = songSource();
+  if (src.key !== sgKey) { renderSongs(); requestAnimationFrame(() => markNowSong(true)); return; }
+  const sig = nowSig();
+  if (sig === sgNowSig) return;
+  sgNowSig = sig;
+  const L = src.kind === 'playlist' ? SONG_LISTS.get(src.pid) : null;
+  if (src.kind === 'queue' || (L && L.error === 'not-owner')) { setTimeout(() => loadQueue(true), 900); renderSongs(); }
+  else markNowSong(false);
+}
+sgBody.addEventListener('scroll', () => {
+  const src = songSource();
+  if (src.kind !== 'playlist') return;
+  const L = SONG_LISTS.get(src.pid);
+  if (L && L.more && !L.loading && !L.error && sgBody.scrollHeight - sgBody.scrollTop - sgBody.clientHeight < 900) loadSongPage(src.pid);
+}, { passive: true });
+sgBody.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act;
+  if (act === 'settings' || act === 'playlists') openPanel(act);
+  else if (act === 'swatch') { sgSwatch = sgSwatch === b.dataset.key ? null : b.dataset.key; renderSongs(); }
+  else if (act === 'color') setColor(b.dataset.id, b.dataset.color);
+  else if (act === 'more') loadSongPage(b.dataset.pid);
+  else if (act === 'retry') { SONG_LISTS.delete(b.dataset.pid); renderSongs(); }
+  else if (act === 'song' || act === 'none') pickSong(b);
+});
+async function pickSong(b) {
+  const row = b.closest('.sg-row');
+  if (b.getAttribute('aria-disabled') === 'true') {
+    if (row && row.classList.contains('off')) { row.classList.remove('nope'); void row.offsetWidth; row.classList.add('nope'); }
+    return;
+  }
+  const src = songSource();
+  // On a phone the list covers the deck, so get out of the way once a song is picked.
+  if (LAYOUT === 'tall' || LAYOUT === 'compact') closePanel();
+  if (src.kind === 'local') { selectTrack(Number(b.dataset.i), true); return; }
+  const uri = b.dataset.uri, ctx = b.dataset.ctx;
+  if (!uri || !ctx || S.busy) return;
+  setMode('msg', 'LOADING', (b.querySelector('.sg-name') || {}).textContent || '', 0);
+  const r = await spotify('playContext', { uri: ctx, track: uri, shuffle: shuffleOn() });
+  if (r && r.ok) { S.playing = true; setMode('track'); }
+  else setMode('msg', 'SPOTIFY', playErrorText(r), 4200);
+  render();
+}
 
 /* ---------- settings panel ---------- */
 const optLogin = $('optLogin'), optMenu = $('optMenu'), optTop = $('optTop'), intNote = $('intNote');
@@ -1684,6 +2108,12 @@ function integrationNote(r) {
 optLogin.addEventListener('change', async () => { if (api) integrationNote(await api.set('startOnLogin', optLogin.checked)); });
 optMenu.addEventListener('change', async () => { if (api) integrationNote(await api.set('appMenu', optMenu.checked)); });
 optTop.addEventListener('change', () => { if (api) api.set('onTop', optTop.checked); });
+const optAutoColor = $('optAutoColor');
+optAutoColor.addEventListener('change', () => {
+  AUTO_COLORS = optAutoColor.checked;
+  if (api) api.set('autoColors', AUTO_COLORS);
+  rackSig = ''; render(); renderDiscList();
+});
 const optAwake = $('optAwake');
 optAwake.addEventListener('change', () => { if (api && api.setKeepAwake) api.setKeepAwake(optAwake.checked); });
 // Hide the settings this platform can't use.
@@ -1725,18 +2155,18 @@ let discSwatch = null;
 function renderDiscList() {
   const list = $('discList');
   const rows = [];
-  const entry = (id, name, count, removable) => {
+  const entry = (id, name, count, removable, artFor) => {
     const li = el('li');
     const sw = btn('sbtn small sw-btn', null, { act: 'swatch', id });
-    sw.setAttribute('aria-label', `Colour for ${name}: ${COLORS[colorName(id)].name}`);
-    sw.append(miniFor('', null, id));
+    sw.setAttribute('aria-label', `Colour for ${name}: ${colorLabel(id)}`);
+    sw.append(miniFor(autoCls(id), null, id, artFor));
     li.append(sw, el('span', 'dn', name), el('span', 'dc', count));
     if (removable) li.append(btn('sbtn small', 'Remove', { act: 'remove', id }));
     if (discSwatch === id) li.append(swatchRow(id));
     return li;
   };
-  rows.push(entry('spotify', 'Spotify (now playing)', 'Spotify', false));
-  for (const d of FILES) rows.push(entry(d.id, d.name, plural(d.tracks.length), true));
+  rows.push(entry('spotify', 'Spotify (now playing)', 'Spotify', false, SP.art));
+  for (const d of FILES) rows.push(entry(d.id, d.name, plural(d.tracks.length), true, d.art));
   rows.push(entry('demo', DEMO.name, plural(DEMO.tracks.length), false));
   if (!FILES.length) rows.push(el('li', 'empty', 'Add a folder, add songs, or drop files on the deck. Each album becomes a disc.'));
   list.replaceChildren(...rows);
@@ -1786,6 +2216,7 @@ function renderAccount() {
     kids.push(el('p', 'set-note', phone
       ? 'See your Spotify playlists here and control the music. On this phone it plays through the Spotify app. One-time setup, about two minutes:'
       : 'Play Spotify right inside Aqua MD, no Spotify app needed. One-time setup, about two minutes:'));
+    if (!phone && PLATFORM === 'linux') kids.push(el('p', 'set-note small', 'No Spotify Premium? Skip the setup: play music in the Spotify app, or at open.spotify.com in your browser (free accounts work). Aqua MD shows what’s playing on its Spotify disc, and its buttons control it.'));
     const ol = el('ol', 'steps');
     const li = html => { const x = el('li'); x.innerHTML = html; ol.append(x); return x; };
     const l1 = li('Open the Spotify developer dashboard and log in with your Spotify account.');
@@ -1838,7 +2269,12 @@ function renderAccount() {
       const e = eng.error || {};
       kids.push(statusLine('bad', ENGINE_TEXT[e.type] || (e.message ? `Built-in player problem: ${e.message}` : 'The built-in player isn’t working.')));
     } else kids.push(statusLine('warn', 'Built-in player is off.'));
-    kids.push(statusLine(A.appOpen ? 'ok' : '', A.appOpen ? 'Spotify app is open. The deck can control it too.' : 'Spotify app isn’t open (not needed).'));
+    kids.push(statusLine(A.appOpen ? 'ok' : '', A.appOpen ? (SP.web ? 'Spotify is playing in your browser. The deck can control it too.' : 'Spotify app is open. The deck can control it too.') : 'Spotify app isn’t open (not needed).'));
+    if (A.movedToApp && !A.useApp) kids.push(el('p', 'set-note small', 'A song Aqua MD’s player couldn’t play moved to the Spotify app, so music plays there until Aqua MD restarts. If that keeps happening, turn on the switch below.'));
+    const useApp = el('label', 'toggle'); useApp.htmlFor = 'optSpApp';
+    const box = el('input'); box.type = 'checkbox'; box.id = 'optSpApp'; box.checked = !!A.useApp;
+    useApp.append(box, el('span', 'track'), el('span', '', 'Play through the Spotify app instead of Aqua MD’s own player (Aqua MD still shows and controls everything)'));
+    kids.push(useApp);
     const row = el('div', 'set-row');
     if (eng.status === 'error' || eng.status === 'off') row.append(btn('sbtn', 'Try again', { act: 'restart' }));
     row.append(btn('sbtn', 'Playlists', { act: 'playlists' }), btn('sbtn', 'Log out', { act: 'logout' }));
@@ -1848,6 +2284,7 @@ function renderAccount() {
   spBox.replaceChildren(...kids);
 }
 spBox.addEventListener('input', e => { if (e.target.id === 'spClient') clientDraft = e.target.value; });
+spBox.addEventListener('change', e => { if (e.target.id === 'optSpApp' && api) api.set('spotifyApp', e.target.checked); });
 spBox.addEventListener('submit', async e => {
   e.preventDefault();
   if (!api) return;
@@ -1999,6 +2436,7 @@ async function init() {
     optMenu.checked = st.appMenu !== false;
     optTop.checked = !!st.onTop;
     optAwake.checked = !!st.keepAwake;
+    AUTO_COLORS = !!st.autoColors; optAutoColor.checked = AUTO_COLORS;
     integrationNote({ appImage: APPIMAGE });
     $('ver').textContent = `Aqua MD ${data.version || ''}${PLATFORM === 'android' ? ' · Android beta' : PLATFORM === 'web' ? ' · Web' : ''}`.trim();
     const last = st.lastDisc;
@@ -2023,7 +2461,7 @@ async function init() {
   if (c && c.lat === wxLoc.lat && c.lon === wxLoc.lon) { try { renderWeather(c.j, false); } catch (e) {} }
   loadWeather();
   requestAnimationFrame(frame);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { curTitle = null; if (L.mode === 'track') trackText(); requestAnimationFrame(measureTitle); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { curTitle = null; dateKey = ''; if (L.mode === 'track') trackText(); requestAnimationFrame(measureTitle); });
 }
 
 // Used by the Android app: its Back button and the play/next buttons in its notification.
@@ -2047,6 +2485,9 @@ window.__aquaDebug = {
   playlists: () => (PLAYLISTS || []).slice(),
   recents: () => RECENTS.slice(),
   panel: () => openName,
+  songs: () => ({ source: songSource().kind, sub: sgSub.textContent, rows: [...sgBody.querySelectorAll('.sg-row')].map(r => ({ title: (r.querySelector('.sg-name') || {}).textContent, meta: (r.querySelector('.sg-meta') || {}).textContent, off: r.classList.contains('off'), now: r.classList.contains('now'), uri: r.dataset.uri || '', key: r.dataset.key || '' })) }),
+  colors: () => ({ map: Object.assign({}, COLOR_MAP), auto: AUTO_COLORS, theme: themeNow, art: [...ART_HUE.entries()] }),
+  hueFromPixels: px => hueFromPixels(px),
   side: () => ({ shown: PAGE_EL.length, geo: GEO, pages: SIDE.pages.length, cur: curPage, interval: SIDE.interval, widgets: INST.map(w => w.type + '@' + w.page), lyrics: LYR.state, lyricLine: (document.querySelector('.wpage.on .wl-line.on') || {}).textContent || '', next: [...document.querySelectorAll('.wpage.on .wu-t')].map(x => x.textContent) }),
   act: { loadDisc, play, pause, stop, next, prev, seek, eject, toggleShuffle, cycleRepeat, setVol, selectTrack, setColor, openPanel, closePanel, loadPlaylists,
     openSettings: () => openPanel('settings'), closeSettings: closePanel, goPage: i => goPage(i, true),

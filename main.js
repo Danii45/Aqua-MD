@@ -256,7 +256,7 @@ function registerProtocol() {
 }
 
 /* ---------------- IPC ---------------- */
-const SETTABLE = new Set(['weather', 'startOnLogin', 'appMenu', 'onTop', 'volume', 'lastDisc', 'shuffle', 'repeat', 'colors', 'recentPlaylists', 'widgets']);
+const SETTABLE = new Set(['weather', 'startOnLogin', 'appMenu', 'onTop', 'volume', 'lastDisc', 'shuffle', 'repeat', 'colors', 'recentPlaylists', 'widgets', 'spotifyApp', 'autoColors']);
 const fromDeck = e => !!(win && !win.isDestroyed() && e.sender === win.webContents);
 function deckHandle(channel, fn) {
   ipcMain.handle(channel, (e, ...args) => { if (!fromDeck(e)) return null; return fn(...args); });
@@ -271,6 +271,17 @@ async function importPaths(paths) {
   return Object.assign(res, { discs: library.forRenderer() });
 }
 
+// Starts the Spotify app (when it's installed) so a song Aqua MD's own player can't play can move there.
+async function openSpotify() {
+  if (process.env.AQUA_TEST_OPEN_SPOTIFY) { await fetch(process.env.AQUA_TEST_OPEN_SPOTIFY).catch(() => {}); return true; }
+  if (process.env.AQUA_TEST_NO_BROWSER === '1') return false;
+  let handler = '';
+  try { handler = app.getApplicationNameForProtocol('spotify://'); } catch (e) { handler = ''; }
+  if (!handler) return false;
+  await shell.openExternal('spotify:');
+  return true;
+}
+
 function wireIpc() {
   deckHandle('init', () => ({
     version: app.getVersion(),
@@ -279,7 +290,8 @@ function wireIpc() {
     settings: {
       weather: settings.get('weather'), startOnLogin: settings.get('startOnLogin'), appMenu: settings.get('appMenu'), onTop: onTopWanted(),
       volume: settings.get('volume'), lastDisc: settings.get('lastDisc'), shuffle: !!settings.get('shuffle'), repeat: settings.get('repeat') || 'off',
-      colors: settings.get('colors') || {}, recentPlaylists: settings.get('recentPlaylists') || [], widgets: settings.get('widgets')
+      colors: settings.get('colors') || {}, recentPlaylists: settings.get('recentPlaylists') || [], widgets: settings.get('widgets'),
+      spotifyApp: !!settings.get('spotifyApp'), autoColors: !!settings.get('autoColors')
     },
     discs: library.forRenderer(),
     spotify: hub.now(),
@@ -325,12 +337,30 @@ function wireIpc() {
     settings.set(key, value);
     if (key === 'startOnLogin' || key === 'appMenu') return runIntegration();
     if (key === 'onTop') bringToFront();
+    if (key === 'spotifyApp' && hub) { hub.usedApp = false; hub.pushAccount(); }
     return true;
   });
   deckHandle('window:next-screen', () => nextScreen());
   deckHandle('window:fullscreen', () => { if (win) setWindowMode(win.isFullScreen() ? 'window' : 'full'); return true; });
   deckHandle('window:mode', mode => setWindowMode(String(mode)));
   deckHandle('app:quit', () => { app.quit(); return true; });
+  // Spotify's cover pictures, passed through so the deck can read their colours (pages can't read pixels of
+  // pictures from other sites).
+  deckHandle('art:data', async url => {
+    let u;
+    try { u = new URL(String(url)); } catch (e) { return null; }
+    const testHost = process.env.AQUA_SPOTIFY_API && new URL(process.env.AQUA_SPOTIFY_API).origin; // automated tests' fake Spotify
+    const spotifyPic = u.protocol === 'https:' && /(^|\.)(scdn\.co|spotifycdn\.com)$/.test(u.hostname);
+    if (!spotifyPic && !(testHost && /^http:\/\/127\.0\.0\.1:/.test(testHost) && u.origin === testHost)) return null;
+    try {
+      const r = await fetch(u.href);
+      if (!r.ok) return null;
+      const type = (r.headers.get('content-type') || 'image/jpeg').split(';')[0];
+      if (!/^image\//.test(type)) return null;
+      const buf = Buffer.from(await r.arrayBuffer());
+      return buf.length > 3e6 ? null : `data:${type};base64,${buf.toString('base64')}`;
+    } catch (e) { return null; }
+  });
 }
 
 /* ---------------- lifecycle ---------------- */
@@ -361,7 +391,7 @@ app.whenReady().then(async () => {
   mpris = useMpris
     ? new MprisBridge(state => hub && hub.onMpris(state))
     : new RemoteBridge(web, state => hub && hub.onMpris(state), () => hub && hub.engine.deviceId);
-  hub = new SpotifyHub({ web, mpris, emit: send, getWindow: () => win });
+  hub = new SpotifyHub({ web, mpris, emit: send, getWindow: () => win, settings, openSpotify });
   global.__aqua = { win: () => win, library, settings, mpris, web, hub, lyrics, importPaths, lastLoginUrl: '' };
   registerProtocol();
   wireIpc();

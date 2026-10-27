@@ -15,6 +15,10 @@
     <div class="date-row">
       <div class="date" id="date">&nbsp;</div>
       <div class="hbtns">
+        <button class="gear wide" id="sgBtn" type="button" aria-label="Songs">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5V5.2l11-2.2v12.2"/><circle cx="6.4" cy="17.6" r="2.6"/><circle cx="17.4" cy="15.3" r="2.6"/><path d="M9 9.2l11-2.2"/></svg>
+          <span>SONGS</span>
+        </button>
         <button class="gear wide" id="plBtn" type="button" aria-label="Playlists">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6h12M3.5 11h12M3.5 16h7"/><circle cx="17.5" cy="17" r="2.6"/><path d="M20.1 17V6.5l-2.6-1"/></svg>
           <span>PLAYLISTS</span>
@@ -37,7 +41,23 @@
         <button class="sbtn primary" id="plDone" type="button">Done</button>
       </div>
     </header>
+    <form class="pl-search" id="plSearch" role="search" autocomplete="off">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 21 21"/></svg>
+      <input id="plQuery" type="search" placeholder="Search Spotify: songs, albums, playlists" spellcheck="false" enterkeyhint="search" aria-label="Search Spotify">
+      <button class="sbtn small" id="plClear" type="button" hidden>Clear</button>
+    </form>
     <div class="pl-body" id="plBody"></div>
+  </section>
+
+  <section class="panel songs" id="songs" hidden aria-label="Songs">
+    <header class="set-head">
+      <div class="sg-head"><h2>Songs</h2><span class="sg-sub" id="sgSub"></span></div>
+      <div class="pl-head-btns">
+        <button class="sbtn" id="sgNow" type="button">Now playing</button>
+        <button class="sbtn primary" id="sgDone" type="button">Done</button>
+      </div>
+    </header>
+    <div class="pl-body sg-body" id="sgBody"></div>
   </section>
 
   <section class="panel settings" id="settings" hidden aria-label="Settings">
@@ -62,6 +82,11 @@
           <button class="sbtn" type="submit">Search</button>
         </form>
         <div class="set-results" id="wxResults"></div>
+      </div>
+      <div class="set-group">
+        <h3>Colours</h3>
+        <label class="toggle" for="optAutoColor"><input type="checkbox" id="optAutoColor"><span class="track"></span><span>Match the colour to the album cover, for discs, playlists and songs without a colour of their own</span></label>
+        <p class="set-note small">Pick a colour for one disc or playlist with its colour button, or for one song in the Songs menu. <b>Auto</b> takes it from the cover.</p>
       </div>
       <div class="set-group">
         <h3>Music</h3>

@@ -360,7 +360,7 @@ footer p { margin: 0; max-width: 90ch; }
       <article class="feat glass">
         <div class="chip lcd"><span class="ind on">SPOTIFY</span></div>
         <h3>Spotify, built in</h3>
-        <p>Log in once and Aqua MD plays Spotify by itself. It also shows up as a speaker in the Spotify app on your phone.</p>
+        <p>Log in once and Aqua MD plays Spotify by itself. Search for any song, album or playlist, or scroll through a playlist and tap a song. It also shows up as a speaker in Spotify on your phone.</p>
       </article>
       <article class="feat glass">
         <div class="chip lcd"><span class="ind on">MP3 · FLAC · MP4 · MOV</span></div>
@@ -368,9 +368,9 @@ footer p { margin: 0; max-width: 90ch; }
         <p>Drop in songs or whole folders. Each album becomes its own disc, with its cover on the label. Video files play their sound only.</p>
       </article>
       <article class="feat glass">
-        <div class="chip lcd"><span class="ind on">7 COLOURS</span></div>
+        <div class="chip lcd"><span class="ind on">7 COLOURS</span><span class="ind on">AUTO</span></div>
         <h3>A colour for every disc</h3>
-        <p>Give a playlist or album its own colour and the whole app fades to it while it plays. Blue is home.</p>
+        <p>Give a playlist, an album or a single song its own colour and the whole app fades to it while it plays. Or pick Auto and it takes the colour of the cover.</p>
       </article>
       <article class="feat glass">
         <div class="chip lcd"><span class="ind on">PAGES</span></div>
@@ -470,7 +470,7 @@ footer p { margin: 0; max-width: 90ch; }
     </div>
     <div class="dl glass screws" role="tabpanel" id="dl-linux" aria-labelledby="os-linux">
       <div class="dl-lcd lcd">
-        <div class="inds"><span class="ind on">LINUX</span><span class="ind on">X86_64</span><span class="ind on">V0.4.0</span></div>
+        <div class="inds"><span class="ind on">LINUX</span><span class="ind on">X86_64</span><span class="ind on" data-ver>V0.4.0</span></div>
         <div class="file">AquaMD-0.4.0-x86_64.AppImage</div>
         <div class="meta">113 MB · AppImage</div>
         <div class="os"><span class="ind on">TESTED ON KUBUNTU</span></div>
@@ -829,6 +829,35 @@ footer p { margin: 0; max-width: 90ch; }
     const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { io.disconnect(); loadReports(); } }, { rootMargin: '600px 0px' });
     io.observe(document.getElementById('bugs'));
   } else loadReports();
+})();
+
+// Download buttons: point each one at the newest published release that has its file, with its real size, so a
+// new version is picked up as soon as it's out. The links written in the page still work if GitHub can't be reached.
+(async () => {
+  const KINDS = [['dl-linux', /\.AppImage$/i, 'AppImage'], ['dl-win', /Windows.*\.exe$/i, 'Installer'], ['dl-mac', /Mac.*\.zip$/i, 'App'],
+    ['dl-android', /\.apk$/i, 'APK'], ['dl-iphone', /\.ipa$/i, null]];
+  let rels = [];
+  try {
+    const r = await fetch('https://api.github.com/repos/Danii45/Aqua-MD/releases?per_page=20', { headers: { accept: 'application/vnd.github+json' } });
+    if (!r.ok) return;
+    rels = (await r.json()).filter(x => x && !x.draft);
+  } catch (e) { return; }
+  for (const [id, re, kind] of KINDS) {
+    const panel = document.getElementById(id); if (!panel) continue;
+    for (const rel of rels) {
+      const a = (rel.assets || []).find(x => re.test(x.name) && x.state === 'uploaded');
+      if (!a) continue;
+      const link = panel.querySelector('a.btn[href*="/releases/"]');
+      if (link) link.href = a.browser_download_url;
+      if (kind) {
+        const file = panel.querySelector('.dl-lcd .file'), meta = panel.querySelector('.dl-lcd .meta'), mb = a.size / 1048576;
+        if (file) file.textContent = a.name;
+        if (meta) meta.textContent = `${mb >= 10 ? Math.round(mb) : mb.toFixed(1)} MB · ${kind}`;
+      }
+      const ver = panel.querySelector('[data-ver]'); if (ver) ver.textContent = String(rel.tag_name || '').toUpperCase();
+      break;
+    }
+  }
 })();
 </script>
 </body>

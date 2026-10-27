@@ -1,7 +1,7 @@
 {
   "name": "aqua-md",
   "productName": "Aqua MD",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A transparent blue MiniDisc-style music player for the Corsair Xeneon Edge",
   "main": "main.js",
   "desktopName": "aqua-md.desktop",
@@ -12,8 +12,8 @@
     "start": "electron .",
     "pack": "electron-builder --linux dir",
     "dist": "electron-builder --linux AppImage",
-    "dist:win": "electron-builder --win dir --x64 -c.electronDist=../castlabs-win -c.extraMetadata.version=0.4.0-beta.2 && node build/windows/make-installer.js 0.4.0-beta.2",
-    "dist:mac": "electron-builder --mac dir --arm64 -c.electronDist=../castlabs-mac -c.executableName='Aqua MD' -c.extraMetadata.version=0.4.1-beta.1 && node build/mac/finish-mac.js 0.4.1-beta.1"
+    "dist:win": "electron-builder --win dir --x64 -c.electronDist=../castlabs-win -c.extraMetadata.version=0.5.0-beta.1 && node build/windows/make-installer.js 0.5.0-beta.1",
+    "dist:mac": "electron-builder --mac dir --arm64 -c.electronDist=../castlabs-mac -c.executableName='Aqua MD' -c.extraMetadata.version=0.5.0-beta.1 && node build/mac/finish-mac.js 0.5.0-beta.1"
   },
   "build": {
     "appId": "app.aquamd.player",
@@ -48,7 +48,7 @@
       }
     },
     "appImage": {
-      "artifactName": "AquaMD-${version}-${arch}.${ext}"
+      "artifactName": "AquaMD-Linux-${arch}.${ext}"
     },
     "afterPack": "build/after-pack.js",
     "toolsets": {

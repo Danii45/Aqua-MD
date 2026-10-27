@@ -22,6 +22,9 @@ const LRCLIB = String(DEV.lyrics || 'https://lrclib.net').replace(/\/$/, '');
 const REDIRECT_URI = DEV.redirect || (NATIVE ? 'http://127.0.0.1:43821/callback' : 'https://danii45.github.io/Aqua-MD/callback/');
 const DASHBOARD = 'https://developer.spotify.com/dashboard';
 const ENGINE_NAME = 'Aqua MD Web';
+// Names this phone might go by in Spotify's device list (from the Android app), to play here and not on a PC.
+const PHONE_NAMES = (() => { try { return NATIVE && NATIVE.deviceNames ? JSON.parse(NATIVE.deviceNames()) : []; } catch (e) { return []; } })()
+  .map(n => String(n || '').trim().toLowerCase()).filter(n => n.length > 2);
 const SCOPES = ['streaming', 'user-read-email', 'user-read-private', 'user-read-playback-state', 'user-modify-playback-state',
   'user-read-currently-playing', 'playlist-read-private', 'playlist-read-collaborative'];
 
@@ -613,17 +616,26 @@ const hub = {
   async appDevice() {
     const list = await web.devices();
     const others = list.filter(d => d.id && d.id !== engine.deviceId && !(d.name === ENGINE_NAME && !MOBILE) && !d.is_restricted);
-    const prefer = MOBILE ? 'Smartphone' : 'Computer';
-    return others.find(d => d.is_active) || others.find(d => d.type === prefer) || others[0] || null;
+    if (MOBILE) return thisPhone(others, false);
+    return others.find(d => d.is_active) || others.find(d => d.type === 'Computer') || others[0] || null;
   },
-  // On a phone, the Spotify app has to be running to play. Open it, then wait for it to show up as a device.
+  // On a phone, Spotify plays in the Spotify app on this phone, which has to be running. Open it, then wait for it
+  // to show up as a device (a phone that appears right after opening it is this one).
   async wakeApp(uri) {
     if (!MOBILE) return null;
+    let before = new Set();
+    try { before = new Set((await web.devices()).map(d => d.id)); } catch (e) { /* offline: just try */ }
+    emit('spotify:notice', { text: 'Starting Spotify on this phone…' });
     openSpotifyApp(uri);
-    const until = Date.now() + 45e3;
-    while (Date.now() < until) {
+    const start = Date.now();
+    while (Date.now() - start < 45e3) {
       await sleep(1500);
-      try { const dev = await this.appDevice(); if (dev) return dev; } catch (e) { /* keep waiting */ }
+      try {
+        const list = (await web.devices()).filter(d => d.id && !d.is_restricted);
+        const fresh = list.find(d => d.type === 'Smartphone' && !before.has(d.id));
+        const dev = fresh || thisPhone(list, Date.now() - start > 6000);
+        if (dev) { try { localStorage.setItem('aqua:phoneDevice', dev.id); } catch (e) { /* not needed */ } return dev; }
+      } catch (e) { /* keep waiting */ }
     }
     return null;
   },
@@ -682,6 +694,16 @@ const hub = {
     return this.cachedPlaylists;
   }
 };
+
+// This phone's Spotify in a device list: the one seen here before, or one named like this phone. With `loose`,
+// any phone (preferring the active one) when the names don't match, e.g. after renaming the phone in Spotify.
+function thisPhone(list, loose) {
+  let known = ''; try { known = localStorage.getItem('aqua:phoneDevice') || ''; } catch (e) { known = ''; }
+  const phones = list.filter(d => d.type === 'Smartphone');
+  const named = d => PHONE_NAMES.some(n => String(d.name || '').toLowerCase() === n || String(d.name || '').toLowerCase().includes(n));
+  return phones.find(d => d.id === known) || phones.find(named)
+    || ((loose || !PHONE_NAMES.length) ? (phones.find(d => d.is_active) || (phones.length === 1 ? phones[0] : null)) : null);
+}
 
 function openSpotifyApp(uri) {
   const id = /^spotify:(playlist|album|artist|show):([A-Za-z0-9]+)$/.exec(uri || '');

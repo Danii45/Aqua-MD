@@ -10,6 +10,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
@@ -49,6 +51,15 @@ public class MainActivity extends Activity {
     /** A Spotify login answer that arrived while no deck was open. */
     private static String loginWaiting = null;
     private String lastAuth = null;
+    private final Handler main = new Handler(Looper.getMainLooper());
+    /** Brings the deck back in front after Spotify has had a moment to start. */
+    private final Runnable comeBack = new Runnable() {
+        @Override public void run() {
+            Intent back = new Intent(MainActivity.this, MainActivity.class);
+            back.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            try { startActivity(back); } catch (Exception e) { Log.w(TAG, "couldn't come back: " + e); }
+        }
+    };
 
     private WebView web;
     private ValueCallback<Uri[]> fileCallback;
@@ -297,6 +308,17 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String version() { return versionName(); }
 
+        /** Names this phone may have in Spotify's device list (Spotify on Android uses the phone's name). */
+        @JavascriptInterface
+        public String deviceNames() {
+            org.json.JSONArray a = new org.json.JSONArray();
+            try { String n = android.provider.Settings.Global.getString(getContentResolver(), "device_name"); if (n != null) a.put(n); } catch (Exception e) { /* not set */ }
+            try { String n = android.provider.Settings.Secure.getString(getContentResolver(), "bluetooth_name"); if (n != null) a.put(n); } catch (Exception e) { /* not readable */ }
+            a.put(android.os.Build.MODEL);
+            a.put(android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL);
+            return a.toString();
+        }
+
         @JavascriptInterface
         public void startLogin(String url) {
             if (url == null || !url.startsWith("https://")) return;
@@ -316,12 +338,16 @@ public class MainActivity extends Activity {
             Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(target));
             i.setPackage("com.spotify.music");
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            // Spotify has to be running on the phone before it can play. Start it, then come straight back to the
+            // deck; Spotify keeps running behind it and Aqua MD tells it what to play.
             try {
                 startActivity(i);
+                main.removeCallbacks(comeBack);
+                main.postDelayed(comeBack, 1300);
                 return true;
             } catch (ActivityNotFoundException e) {
                 Intent launch = getPackageManager().getLaunchIntentForPackage("com.spotify.music");
-                if (launch != null) { startActivity(launch); return true; }
+                if (launch != null) { startActivity(launch); main.removeCallbacks(comeBack); main.postDelayed(comeBack, 1300); return true; }
                 openOutside(Uri.parse("https://play.google.com/store/apps/details?id=com.spotify.music"));
                 return false;
             }

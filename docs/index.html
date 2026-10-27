@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux (plus Windows, Mac and Android betas, and a web version), made for the Corsair Xeneon Edge.">
+<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux (plus Windows, Mac, Android and iPhone betas, and a web version), made for the Corsair Xeneon Edge.">
 <link rel="icon" type="image/png" href="img/icon.png">
 <title>Aqua MD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -186,6 +186,7 @@ section { scroll-margin-top: 110px; }
 .dl-lcd .meta { font-family: var(--font-dot); font-weight: 700; font-size: 22px; color: var(--lcd-on); opacity: .7; }
 .dl-main { display: grid; gap: 18px; align-content: start; }
 .dl-main .btn { width: 100%; min-height: 76px; font-size: 24px; }
+.dl-main .steps + .btn { margin-top: 6px; }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: s; }
 .steps li { display: grid; grid-template-columns: 54px 1fr; gap: 14px; align-items: start; font-size: 20px; line-height: 1.4; }
 .steps li::before { counter-increment: s; content: counter(s, decimal-leading-zero); font-family: var(--font-dot); font-weight: 900; font-size: 34px; line-height: 1; color: var(--lcd-on); text-shadow: 0 0 12px var(--lcd-glow); }
@@ -199,6 +200,7 @@ section { scroll-margin-top: 110px; }
 .beta-box b { color: #ffcf7a; font-weight: 600; }
 .beta-box span { color: var(--ink-dim); }
 .beta-box a { justify-self: start; }
+.beta-box code { font-family: ui-monospace, monospace; font-size: .85em; color: var(--lcd-on); overflow-wrap: anywhere; }
 .note { margin: 0; color: var(--ink-dim); font-size: 18px; }
 .os { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 6px; }
 
@@ -303,7 +305,7 @@ footer p { margin: 0; max-width: 90ch; }
   <section class="hero" aria-labelledby="h1">
     <div class="hero-lcd lcd">
       <div class="row">
-        <div class="inds"><span class="ind on">LINUX</span><span class="ind beta on">WINDOWS BETA</span><span class="ind beta on">MAC BETA</span><span class="ind beta on">ANDROID BETA</span><span class="ind on">WEB</span></div>
+        <div class="inds"><span class="ind on">LINUX</span><span class="ind beta on">WINDOWS BETA</span><span class="ind beta on">MAC BETA</span><span class="ind beta on">ANDROID BETA</span><span class="ind beta on">IPHONE BETA</span><span class="ind on">WEB</span></div>
         <div class="inds"><span class="ind on">APPIMAGE</span><span class="ind on">V0.4.0</span></div>
       </div>
       <h1 id="h1">AQUA MD</h1>
@@ -315,7 +317,7 @@ footer p { margin: 0; max-width: 90ch; }
     </div>
 
     <div class="hero-text">
-      <p class="lead">Aqua MD plays Spotify, your own music and the sound from your videos on a glass deck that spins, glows and scrolls song titles across a dot-matrix display. Widgets take turns on the side. It was made for the Corsair Xeneon Edge, and it fits any window, and your phone, too. Linux now; Windows, Mac and Android in beta; or right in your browser.</p>
+      <p class="lead">Aqua MD plays Spotify, your own music and the sound from your videos on a glass deck that spins, glows and scrolls song titles across a dot-matrix display. Widgets take turns on the side. It was made for the Corsair Xeneon Edge, and it fits any window, and your phone, too. Linux now; Windows, Mac, Android and iPhone in beta; or right in your browser.</p>
       <div class="cta">
         <a class="btn primary" href="#download" id="heroDl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span>Download</span></a>
         <a class="btn" href="#features">See what it does</a>
@@ -456,13 +458,14 @@ footer p { margin: 0; max-width: 90ch; }
     <div class="sec-head">
       <span class="label">Download</span>
       <h2 id="d-h">Get Aqua MD</h2>
-      <p>For Linux, plus Windows, Mac and Android betas, or open it right in your browser. No terminal needed.</p>
+      <p>For Linux, plus Windows, Mac, Android and iPhone betas, or open it right in your browser. No terminal needed.</p>
     </div>
     <div class="tabs os-tabs" role="tablist" aria-label="Choose your system">
       <button class="btn tab" role="tab" id="os-linux" aria-controls="dl-linux" aria-selected="true" data-os="linux">LINUX</button>
       <button class="btn tab" role="tab" id="os-win" aria-controls="dl-win" aria-selected="false" data-os="win">WINDOWS <span class="beta-tag">BETA</span></button>
       <button class="btn tab" role="tab" id="os-mac" aria-controls="dl-mac" aria-selected="false" data-os="mac">MAC <span class="beta-tag">BETA</span></button>
       <button class="btn tab" role="tab" id="os-android" aria-controls="dl-android" aria-selected="false" data-os="android">ANDROID <span class="beta-tag">BETA</span></button>
+      <button class="btn tab" role="tab" id="os-iphone" aria-controls="dl-iphone" aria-selected="false" data-os="iphone">IPHONE <span class="beta-tag">BETA</span></button>
       <button class="btn tab" role="tab" id="os-web" aria-controls="dl-web" aria-selected="false" data-os="web">WEB · CHROME OS</button>
     </div>
     <div class="dl glass screws" role="tabpanel" id="dl-linux" aria-labelledby="os-linux">
@@ -545,6 +548,32 @@ footer p { margin: 0; max-width: 90ch; }
         </div>
       </div>
     </div>
+    <div class="dl glass screws" role="tabpanel" id="dl-iphone" aria-labelledby="os-iphone" hidden>
+      <div class="dl-lcd lcd">
+        <div class="inds"><span class="ind on">IPHONE</span><span class="ind on">IOS 15+</span><span class="ind beta on">BETA</span></div>
+        <div class="file">AquaMD-iPhone-Beta.ipa</div>
+        <div class="meta">1.4 MB · or no download at all</div>
+        <div class="os"><span class="ind on">TWO WAYS TO INSTALL</span><span class="ind beta on">NOT YET TRIED ON AN IPHONE</span></div>
+      </div>
+      <div class="dl-main">
+        <a class="btn primary" href="https://danii45.github.io/Aqua-MD/app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 7.5v7M8.8 11.3 12 14.5l3.2-3.2"/></svg>Easiest: add to Home Screen</a>
+        <ol class="steps">
+          <li><div><b>On your iPhone, open it in Safari</b> with the button above.</div></li>
+          <li><div><b>Tap Share → Add to Home Screen → Add.</b> Aqua MD gets its own icon and opens full screen. It updates by itself and never expires.</div></li>
+        </ol>
+        <a class="btn" href="https://github.com/Danii45/Aqua-MD/releases/latest/download/AquaMD-iPhone-Beta.ipa" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Or sideload the .ipa</a>
+        <ol class="steps">
+          <li><div><b>On your computer,</b> download the .ipa, plug in your iPhone and open <b>Sideloadly</b>. Drag the .ipa in, enter your Apple ID and click <b>Start</b>.</div></li>
+          <li><div><b>On the iPhone,</b> trust it in <b>Settings → General → VPN &amp; Device Management</b>. On iOS 16 and newer, also turn on <b>Settings → Privacy &amp; Security → Developer Mode</b>.</div></li>
+          <li><div><b>With a free Apple ID,</b> Apple makes sideloaded apps stop after 7 days: run Sideloadly again to renew it.</div></li>
+        </ol>
+        <div class="beta-box">
+          <b>Which one?</b>
+          <span>Both are the same deck and both control the Spotify app (Premium needed), with your playlists in Aqua MD. The sideloaded app adds one thing: your own songs keep playing with the screen locked. For Spotify, use the web version’s Redirect URI: <code>https://danii45.github.io/Aqua-MD/callback/</code></span>
+          <a href="#bugs">Report a problem</a>
+        </div>
+      </div>
+    </div>
     <div class="dl glass screws" role="tabpanel" id="dl-web" aria-labelledby="os-web" hidden>
       <div class="dl-lcd lcd">
         <div class="inds"><span class="ind on">CHROME</span><span class="ind on">CHROME OS</span><span class="ind on">EDGE</span></div>
@@ -583,6 +612,7 @@ footer p { margin: 0; max-width: 90ch; }
             <label class="opt"><input type="radio" name="system" value="Windows beta"><span>WINDOWS <span class="beta-tag">BETA</span></span></label>
             <label class="opt"><input type="radio" name="system" value="Mac beta"><span>MAC <span class="beta-tag">BETA</span></span></label>
             <label class="opt"><input type="radio" name="system" value="Android beta"><span>ANDROID <span class="beta-tag">BETA</span></span></label>
+            <label class="opt"><input type="radio" name="system" value="iPhone beta"><span>IPHONE <span class="beta-tag">BETA</span></span></label>
             <label class="opt"><input type="radio" name="system" value="Web version"><span>WEB · CHROME OS</span></label>
           </div>
         </fieldset>
@@ -693,12 +723,14 @@ footer p { margin: 0; max-width: 90ch; }
   const ua = navigator.userAgent || '';
   const onAndroid = /android/i.test(ua) || plat.includes('android');
   const onChromeOS = /CrOS/.test(ua) || plat.includes('chrome os');
-  const onMac = !onAndroid && (plat.includes('mac') || /Macintosh/.test(ua)) && !/iPhone|iPad/.test(ua);
+  const onIPhone = /iPhone|iPod/.test(ua);
+  const onMac = !onAndroid && !onIPhone && (plat.includes('mac') || /Macintosh/.test(ua)) && !/iPad/.test(ua) && !(navigator.maxTouchPoints > 1);
   const onWindows = !onAndroid && plat.includes('win');
   const byId = id => osTabs.find(t => t.id === id);
-  pickOs(byId(onAndroid ? 'os-android' : onChromeOS ? 'os-web' : onMac ? 'os-mac' : onWindows ? 'os-win' : 'os-linux'));
+  pickOs(byId(onAndroid ? 'os-android' : onIPhone ? 'os-iphone' : onChromeOS ? 'os-web' : onMac ? 'os-mac' : onWindows ? 'os-win' : 'os-linux'));
   const heroDl = document.getElementById('heroDl');
   if (onAndroid) heroDl.querySelector('span').innerHTML = 'Download for Android <span class="beta-tag">BETA</span>';
+  else if (onIPhone) heroDl.querySelector('span').innerHTML = 'Get it for iPhone <span class="beta-tag">BETA</span>';
   else if (onChromeOS) heroDl.querySelector('span').textContent = 'Open in your browser';
   else if (onMac) heroDl.querySelector('span').innerHTML = 'Download for Mac <span class="beta-tag">BETA</span>';
   else if (onWindows) heroDl.querySelector('span').innerHTML = 'Download for Windows <span class="beta-tag">BETA</span>';
@@ -738,8 +770,8 @@ footer p { margin: 0; max-width: 90ch; }
   const form = document.getElementById('bugForm');
   const bugMsg = document.getElementById('bugMsg');
   const HINT = bugMsg.innerHTML;
-  form.elements.system.value = onAndroid ? 'Android beta' : onChromeOS ? 'Web version' : onMac ? 'Mac beta' : onWindows ? 'Windows beta' : 'Linux';
-  if (onAndroid) form.elements.screen.value = 'on a phone or tablet';
+  form.elements.system.value = onAndroid ? 'Android beta' : onIPhone ? 'iPhone beta' : onChromeOS ? 'Web version' : onMac ? 'Mac beta' : onWindows ? 'Windows beta' : 'Linux';
+  if (onAndroid || onIPhone) form.elements.screen.value = 'on a phone or tablet';
   form.addEventListener('input', e => { if (e.target.value.trim()) e.target.removeAttribute('aria-invalid'); });
   form.addEventListener('submit', e => {
     e.preventDefault();

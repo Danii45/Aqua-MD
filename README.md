@@ -1,6 +1,6 @@
 # Aqua MD
 
-A see-through, MiniDisc-style music player for Linux (plus Windows, Mac and Android betas, and a [web version](https://danii45.github.io/Aqua-MD/app/)), made for the Corsair Xeneon Edge (2560 × 720) and happy in any window.
+A see-through, MiniDisc-style music player for Linux (plus Windows, Mac, Android and iPhone betas, and a [web version](https://danii45.github.io/Aqua-MD/app/)), made for the Corsair Xeneon Edge (2560 × 720) and happy in any window.
 
 ![Aqua MD on a 2560 × 720 screen](docs/img/hero-blue.webp)
 
@@ -50,13 +50,22 @@ Download `AquaMD-Android-Beta.apk` from [Releases](https://github.com/Danii45/Aq
 - Spotify plays through the Spotify app (Premium needed); you pick playlists and control it in Aqua MD.
 - Add your own songs with **Add songs**. They're copied into the app, so they keep working if you move the files.
 
+### iPhone (beta)
+
+Two ways, both iOS 15 or newer:
+
+- **Add to Home Screen (easiest):** open [danii45.github.io/Aqua-MD/app](https://danii45.github.io/Aqua-MD/app/) in Safari, tap **Share → Add to Home Screen**. It gets its own icon, opens full screen and updates by itself.
+- **Sideload:** download `AquaMD-iPhone-Beta.ipa` from [Releases](https://github.com/Danii45/Aqua-MD/releases) and install it with [Sideloadly](https://sideloadly.io) and your Apple ID. Trust it in **Settings → General → VPN & Device Management** (and turn on **Developer Mode** on iOS 16+). With a free Apple ID it stops after 7 days: run Sideloadly again to renew it. Your own songs keep playing with the screen locked.
+
+Either way Spotify plays through the Spotify app (Premium needed), controlled from Aqua MD, using the web version's redirect URI.
+
 ## Spotify setup
 
 In Aqua MD, open Settings → Spotify and follow the steps: create a free app on the Spotify developer dashboard with the redirect URI `http://127.0.0.1:43821/callback`, tick Web API and Web Playback SDK, and paste its Client ID.
 
 The Android app uses the same redirect URI and Client ID: it logs in through your phone's browser and catches the answer on `127.0.0.1:43821` itself.
 
-The web version uses the same Client ID with one more redirect URI: `https://danii45.github.io/Aqua-MD/callback/`.
+The web version and the iPhone app use the same Client ID with one more redirect URI: `https://danii45.github.io/Aqua-MD/callback/`.
 
 ## Build from source
 
@@ -69,6 +78,9 @@ npm run dist:mac     # Mac app (zip); needs castLabs Electron for darwin-arm64 i
 node tools/build-apk.js 0.4.0-beta.3 3   # Android APK (see below)
 node tools/build-web.js docs/app 0.4.1 --web   # web version, served by the website
 ```
+
+The iPhone app (`ios/`) is a small Swift shell around the web version. GitHub Actions builds the unsigned `.ipa` on a Mac
+(`.github/workflows/ios.yml`, which runs `ios/build-ipa.sh`) and attaches it to the newest release.
 
 The Mac app is signed ad hoc with [rcodesign](https://github.com/indygreg/apple-platform-rs) (`$RCODESIGN`), which runs on Linux.
 

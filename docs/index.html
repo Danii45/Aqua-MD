@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux, made for the Corsair Xeneon Edge.">
+<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux (and Windows in beta), made for the Corsair Xeneon Edge.">
 <link rel="icon" type="image/png" href="img/icon.png">
 <title>Aqua MD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,6 +35,7 @@
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; }
+[hidden] { display: none !important; }
 html { scroll-behavior: smooth; }
 body {
   background:
@@ -189,6 +190,14 @@ section { scroll-margin-top: 110px; }
 .steps li { display: grid; grid-template-columns: 54px 1fr; gap: 14px; align-items: start; font-size: 20px; line-height: 1.4; }
 .steps li::before { counter-increment: s; content: counter(s, decimal-leading-zero); font-family: var(--font-dot); font-weight: 900; font-size: 34px; line-height: 1; color: var(--lcd-on); text-shadow: 0 0 12px var(--lcd-glow); }
 .steps b { font-weight: 600; }
+.ind.beta { color: hsl(40 100% 74% / .25); }
+.ind.beta.on { color: #ffcf7a; text-shadow: 0 0 10px rgba(255,207,122,.55); }
+.beta-tag { display: inline-block; margin-left: 4px; padding: 3px 7px 2px; border-radius: 7px; border: 1px solid rgba(255,207,122,.7); color: #ffcf7a; font-family: var(--font-label); font-size: 10px; letter-spacing: .16em; line-height: 1.2; vertical-align: middle; text-shadow: 0 0 8px rgba(255,207,122,.45); }
+.os-tabs { margin-bottom: 16px; }
+.beta-box { display: grid; gap: 6px; padding: 14px 16px; border-radius: 16px; border: 1.5px solid rgba(255,207,122,.45); background: rgba(255,190,90,.07); font-size: 18px; line-height: 1.45; }
+.beta-box b { color: #ffcf7a; font-weight: 600; }
+.beta-box span { color: var(--ink-dim); }
+.beta-box a { justify-self: start; }
 .note { margin: 0; color: var(--ink-dim); font-size: 18px; }
 .os { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 6px; }
 
@@ -240,7 +249,7 @@ footer p { margin: 0; max-width: 90ch; }
   <section class="hero" aria-labelledby="h1">
     <div class="hero-lcd lcd">
       <div class="row">
-        <div class="inds"><span class="ind on">LINUX</span><span class="ind">WINDOWS</span><span class="ind">MACOS</span></div>
+        <div class="inds"><span class="ind on">LINUX</span><span class="ind beta on">WINDOWS BETA</span><span class="ind">MACOS</span></div>
         <div class="inds"><span class="ind on">APPIMAGE</span><span class="ind on">V0.4.0</span></div>
       </div>
       <h1 id="h1">AQUA MD</h1>
@@ -252,9 +261,9 @@ footer p { margin: 0; max-width: 90ch; }
     </div>
 
     <div class="hero-text">
-      <p class="lead">Aqua MD plays Spotify, your own music and the sound from your videos on a glass deck that spins, glows and scrolls song titles across a dot-matrix display. Widgets take turns on the side. It was made for the Corsair Xeneon Edge, and it fits any window too.</p>
+      <p class="lead">Aqua MD plays Spotify, your own music and the sound from your videos on a glass deck that spins, glows and scrolls song titles across a dot-matrix display. Widgets take turns on the side. It was made for the Corsair Xeneon Edge, and it fits any window too. Linux now, Windows in beta.</p>
       <div class="cta">
-        <a class="btn primary" href="#download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Linux</a>
+        <a class="btn primary" href="#download" id="heroDl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span>Download</span></a>
         <a class="btn" href="#features">See what it does</a>
       </div>
     </div>
@@ -392,24 +401,49 @@ footer p { margin: 0; max-width: 90ch; }
   <section class="sec" id="download" aria-labelledby="d-h">
     <div class="sec-head">
       <span class="label">Download</span>
-      <h2 id="d-h">Get Aqua MD for Linux</h2>
-      <p>One file. No installer and no terminal.</p>
+      <h2 id="d-h">Get Aqua MD</h2>
+      <p>For Linux, plus a Windows beta. No terminal needed.</p>
     </div>
-    <div class="dl glass screws">
+    <div class="tabs os-tabs" role="tablist" aria-label="Choose your system">
+      <button class="btn tab" role="tab" id="os-linux" aria-controls="dl-linux" aria-selected="true" data-os="linux">LINUX</button>
+      <button class="btn tab" role="tab" id="os-win" aria-controls="dl-win" aria-selected="false" data-os="win">WINDOWS <span class="beta-tag">BETA</span></button>
+    </div>
+    <div class="dl glass screws" role="tabpanel" id="dl-linux" aria-labelledby="os-linux">
       <div class="dl-lcd lcd">
         <div class="inds"><span class="ind on">LINUX</span><span class="ind on">X86_64</span><span class="ind on">V0.4.0</span></div>
         <div class="file">AquaMD-0.4.0-x86_64.AppImage</div>
         <div class="meta">113 MB · AppImage</div>
-        <div class="os"><span class="ind on">TESTED ON KUBUNTU</span><span class="ind">WINDOWS: NOT YET</span><span class="ind">MACOS: NOT YET</span></div>
+        <div class="os"><span class="ind on">TESTED ON KUBUNTU</span></div>
       </div>
       <div class="dl-main">
-        <a class="btn primary" id="dlBtn" href="https://github.com/Danii45/Aqua-MD/releases/latest/download/AquaMD-0.4.0-x86_64.AppImage" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Linux</a>
+        <a class="btn primary" href="https://github.com/Danii45/Aqua-MD/releases/latest/download/AquaMD-0.4.0-x86_64.AppImage" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Linux</a>
         <ol class="steps">
           <li><div><b>Download</b> the file. It lands in your Downloads folder.</div></li>
           <li><div><b>Right-click it → Properties → Permissions</b> and tick the box that makes it executable.</div></li>
           <li><div><b>Double-click it.</b> On a Xeneon Edge it opens full screen there by itself.</div></li>
         </ol>
         <p class="note">Built and tested on Kubuntu. Other 64-bit Linux desktops should work too. <a href="https://github.com/Danii45/Aqua-MD/releases" target="_blank" rel="noopener">All versions on GitHub</a></p>
+      </div>
+    </div>
+    <div class="dl glass screws" role="tabpanel" id="dl-win" aria-labelledby="os-win" hidden>
+      <div class="dl-lcd lcd">
+        <div class="inds"><span class="ind on">WINDOWS 10 · 11</span><span class="ind on">X64</span><span class="ind beta on">BETA</span></div>
+        <div class="file">AquaMD-Windows-Beta-Setup.exe</div>
+        <div class="meta" id="winSize">111 MB · Installer</div>
+        <div class="os"><span class="ind beta on">NOT YET TESTED ON A WINDOWS PC</span></div>
+      </div>
+      <div class="dl-main">
+        <a class="btn primary" href="https://github.com/Danii45/Aqua-MD/releases/latest/download/AquaMD-Windows-Beta-Setup.exe" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Windows <span class="beta-tag">BETA</span></a>
+        <ol class="steps">
+          <li><div><b>Download</b> the installer.</div></li>
+          <li><div><b>Double-click it.</b> If Windows says “Windows protected your PC”, click <b>More info → Run anyway</b>. Aqua MD isn’t code-signed yet, so Windows doesn’t know it.</div></li>
+          <li><div><b>It installs and opens by itself.</b> Next time, find Aqua MD in the Start menu or on your desktop.</div></li>
+        </ol>
+        <div class="beta-box">
+          <b>This is a beta.</b>
+          <span>Built for Windows but not yet tried on a real Windows PC, so expect rough edges. The built-in Spotify player may not work on Windows yet; when it doesn’t, Aqua MD shows and controls the Spotify app instead, after you log in once in Settings. CPU and GPU temperatures aren’t shown on Windows.</span>
+          <a href="https://github.com/Danii45/Aqua-MD/issues" target="_blank" rel="noopener">Report a problem on GitHub</a>
+        </div>
       </div>
     </div>
   </section>
@@ -469,6 +503,26 @@ footer p { margin: 0; max-width: 90ch; }
       requestAnimationFrame(step);
     })(last);
   }
+
+  // Download: open the tab for the visitor's system.
+  const osTabs = [...document.querySelectorAll('.os-tabs .tab')];
+  function pickOs(tab) {
+    osTabs.forEach(t => { const on = t === tab; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; document.getElementById(t.getAttribute('aria-controls')).hidden = !on; });
+  }
+  osTabs.forEach((t, i) => {
+    t.addEventListener('click', () => pickOs(t));
+    t.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault(); const n = osTabs[(i + d + osTabs.length) % osTabs.length]; n.focus(); pickOs(n);
+    });
+  });
+  const plat = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '').toLowerCase();
+  const onWindows = plat.includes('win');
+  pickOs(osTabs[onWindows ? 1 : 0]);
+  const heroDl = document.getElementById('heroDl');
+  if (onWindows) heroDl.querySelector('span').innerHTML = 'Download for Windows <span class="beta-tag">BETA</span>';
+  else if (plat.includes('linux')) heroDl.querySelector('span').textContent = 'Download for Linux';
 
   // Widget screenshots.
   const SHOTS = {

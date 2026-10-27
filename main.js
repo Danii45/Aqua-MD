@@ -6,6 +6,7 @@ const { Readable } = require('stream');
 const { Settings } = require('./lib/settings');
 const { Library, ALL_EXT } = require('./lib/library');
 const { MprisBridge } = require('./lib/mpris');
+const { RemoteBridge } = require('./lib/spotify-remote');
 const { SpotifyWeb } = require('./lib/spotify-web');
 const { SpotifyHub } = require('./lib/spotify-hub');
 const { Lyrics } = require('./lib/lyrics');
@@ -27,6 +28,8 @@ if (process.platform === 'linux') {
 }
 // Spotify's player starts music without a click on the page that hosts it.
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
+if (process.platform === 'win32') app.setAppUserModelId('app.aquamd.player');
 
 if (!app.requestSingleInstanceLock()) { app.quit(); }
 
@@ -252,7 +255,8 @@ async function importPaths(paths) {
 function wireIpc() {
   deckHandle('init', () => ({
     version: app.getVersion(),
-    appImage: !!process.env.APPIMAGE,
+    platform: process.platform,
+    appImage: !!process.env.APPIMAGE || process.platform === 'win32',
     settings: {
       weather: settings.get('weather'), startOnLogin: settings.get('startOnLogin'), appMenu: settings.get('appMenu'),
       volume: settings.get('volume'), lastDisc: settings.get('lastDisc'), shuffle: !!settings.get('shuffle'), repeat: settings.get('repeat') || 'off',
@@ -332,7 +336,11 @@ app.whenReady().then(async () => {
   library = new Library(app.getPath('userData'), settings);
   lyrics = new Lyrics(app.getPath('userData'), library, app.getVersion());
   web = new SpotifyWeb({ settings, vault, onChange: () => hub && hub.pushAccount() });
-  mpris = new MprisBridge(state => hub && hub.onMpris(state));
+  // Linux sees the Spotify app over MPRIS; elsewhere Aqua MD follows Spotify through the Web API.
+  const useMpris = process.platform === 'linux' && process.env.AQUA_FORCE_REMOTE !== '1';
+  mpris = useMpris
+    ? new MprisBridge(state => hub && hub.onMpris(state))
+    : new RemoteBridge(web, state => hub && hub.onMpris(state), () => hub && hub.engine.deviceId);
   hub = new SpotifyHub({ web, mpris, emit: send, getWindow: () => win });
   global.__aqua = { win: () => win, library, settings, mpris, web, hub, lyrics, importPaths, lastLoginUrl: '' };
   registerProtocol();

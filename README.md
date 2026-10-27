@@ -19,7 +19,16 @@ Get the latest `.AppImage` from [Releases](https://github.com/Danii45/Aqua-MD/re
 2. Right-click it → Properties → Permissions, and tick the box that makes it executable.
 3. Double-click it.
 
-Linux (x86_64) only for now. Built and tested on Kubuntu.
+Built and tested on Kubuntu (x86_64).
+
+### Windows (beta)
+
+Download `AquaMD-Windows-Beta-Setup.exe` from [Releases](https://github.com/Danii45/Aqua-MD/releases) and double-click it. It installs for your user and adds Aqua MD to the Start menu and desktop.
+
+- It isn't code-signed yet, so Windows may say "Windows protected your PC": click **More info → Run anyway**.
+- It's a beta and hasn't been tested much on Windows yet. If the built-in Spotify player doesn't work, Aqua MD shows and controls the Spotify app through your Spotify account instead.
+- CPU and GPU temperatures aren't shown on Windows.
+- Please report problems in [Issues](https://github.com/Danii45/Aqua-MD/issues).
 
 ## Spotify setup
 
@@ -31,6 +40,7 @@ In Aqua MD, open Settings → Spotify and follow the steps: create a free app on
 npm install
 npm start            # run it
 npm run dist         # build dist/AquaMD-<version>-x86_64.AppImage
+npm run dist:win     # Windows installer; needs castLabs Electron for win32-x64 unpacked in ../castlabs-win
 ```
 
 Built with castLabs Electron (Electron with Widevine), which Spotify's Web Playback SDK needs.

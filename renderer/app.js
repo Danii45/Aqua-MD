@@ -1903,6 +1903,7 @@ async function init() {
     ACCOUNT = Object.assign({}, ACCOUNT, data.account || {});
     DISPLAY = data.display || null;
     APPIMAGE = !!data.appImage;
+    if (data.platform === 'win32') { optMenu.closest('.toggle').hidden = true; }
     optLogin.checked = !!st.startOnLogin;
     optMenu.checked = st.appMenu !== false;
     integrationNote({ appImage: APPIMAGE });

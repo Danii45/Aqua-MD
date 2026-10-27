@@ -1,6 +1,6 @@
 # Aqua MD
 
-A see-through, MiniDisc-style music player for Linux (plus Windows and Android betas), made for the Corsair Xeneon Edge (2560 × 720) and happy in any window.
+A see-through, MiniDisc-style music player for Linux (plus Windows, Mac and Android betas, and a [web version](https://danii45.github.io/Aqua-MD/app/)), made for the Corsair Xeneon Edge (2560 × 720) and happy in any window.
 
 ![Aqua MD on a 2560 × 720 screen](docs/img/hero-blue.webp)
 
@@ -30,6 +30,17 @@ Download `AquaMD-Windows-Beta-Setup.exe` from [Releases](https://github.com/Dani
 - CPU and GPU temperatures aren't shown on Windows.
 - Please report problems in [Issues](https://github.com/Danii45/Aqua-MD/issues).
 
+### Mac (beta)
+
+Download `AquaMD-Mac-Beta.zip` from [Releases](https://github.com/Danii45/Aqua-MD/releases), double-click it and drag **Aqua MD** into Applications. For Macs with Apple chips (M1 and newer).
+
+- It isn't notarized by Apple yet. The first time, macOS says it can't check it: click **Done**, then **System Settings → Privacy & Security → Open Anyway**.
+- If the built-in Spotify player doesn't start, Aqua MD shows and controls the Spotify app instead.
+
+### Web / Chrome OS
+
+Open **[danii45.github.io/Aqua-MD/app](https://danii45.github.io/Aqua-MD/app/)** in Chrome or Edge. Click the Install icon in the address bar to give it its own window. Spotify plays right in the browser on computers and Chromebooks; songs you add are saved in that browser.
+
 ### Android (beta)
 
 Download `AquaMD-Android-Beta.apk` from [Releases](https://github.com/Danii45/Aqua-MD/releases) on your phone and open it. Needs Android 8 or newer.
@@ -45,6 +56,8 @@ In Aqua MD, open Settings → Spotify and follow the steps: create a free app on
 
 The Android app uses the same redirect URI and Client ID: it logs in through your phone's browser and catches the answer on `127.0.0.1:43821` itself.
 
+The web version uses the same Client ID with one more redirect URI: `https://danii45.github.io/Aqua-MD/callback/`.
+
 ## Build from source
 
 ```sh
@@ -52,8 +65,12 @@ npm install
 npm start            # run it
 npm run dist         # build dist/AquaMD-<version>-x86_64.AppImage
 npm run dist:win     # Windows installer; needs castLabs Electron for win32-x64 unpacked in ../castlabs-win
-node tools/build-apk.js 0.4.0-beta.1 1   # Android APK (see below)
+npm run dist:mac     # Mac app (zip); needs castLabs Electron for darwin-arm64 in ../castlabs-mac and rcodesign
+node tools/build-apk.js 0.4.0-beta.3 3   # Android APK (see below)
+node tools/build-web.js docs/app 0.4.1 --web   # web version, served by the website
 ```
+
+The Mac app is signed ad hoc with [rcodesign](https://github.com/indygreg/apple-platform-rs) (`$RCODESIGN`), which runs on Linux.
 
 The Android app is a small native shell (`android/`) around the same interface, built for the browser by
 `tools/build-web.js` (`web/platform.js` stands in for Electron's main process). `tools/build-apk.js` builds it

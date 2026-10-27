@@ -275,7 +275,7 @@ function wireIpc() {
   deckHandle('init', () => ({
     version: app.getVersion(),
     platform: process.platform,
-    appImage: !!process.env.APPIMAGE || process.platform === 'win32',
+    appImage: !!process.env.APPIMAGE || process.platform === 'win32' || process.platform === 'darwin',
     settings: {
       weather: settings.get('weather'), startOnLogin: settings.get('startOnLogin'), appMenu: settings.get('appMenu'), onTop: onTopWanted(),
       volume: settings.get('volume'), lastDisc: settings.get('lastDisc'), shuffle: !!settings.get('shuffle'), repeat: settings.get('repeat') || 'off',

@@ -1790,9 +1790,12 @@ function renderAccount() {
     const li = html => { const x = el('li'); x.innerHTML = html; ol.append(x); return x; };
     const l1 = li('Open the Spotify developer dashboard and log in with your Spotify account.');
     const r1 = el('div', 'set-row'); r1.append(btn('sbtn small', 'Open dashboard', { act: 'dashboard' })); l1.append(r1);
+    const inBrowser = A.platform === 'web';
     li(phone ? 'Already made an <b>Aqua MD</b> app there on your computer? Open it and skip to step 5: it works on your phone too. If not, click <b>Create app</b> and name it <b>Aqua MD</b>.'
+      : inBrowser ? 'Already made an <b>Aqua MD</b> app there for the desktop version? Open it and click <b>Edit</b>. If not, click <b>Create app</b> and name it <b>Aqua MD</b>.'
       : 'Click <b>Create app</b>. Name it <b>Aqua MD</b>, and type anything as the description.');
-    const l3 = li(phone ? 'Under <b>Redirect URIs</b>, paste this and click <b>Add</b> (it’s the same one the computer version uses):' : 'Under <b>Redirect URIs</b>, paste this and click <b>Add</b>:');
+    const l3 = li(phone ? 'Under <b>Redirect URIs</b>, paste this and click <b>Add</b> (it’s the same one the computer version uses):'
+      : inBrowser ? 'Under <b>Redirect URIs</b>, paste this and click <b>Add</b> (keep any address that’s already there):' : 'Under <b>Redirect URIs</b>, paste this and click <b>Add</b>:');
     const cb = el('div', 'codebox'); cb.append(el('code', '', A.redirectUri), btn('sbtn small', 'Copy', { act: 'copy' })); l3.append(cb);
     li(phone ? 'Make sure <b>Web API</b> is ticked, then click <b>Save</b>.' : 'Tick <b>Web API</b> and <b>Web Playback SDK</b>, agree to the terms, and click <b>Save</b>.');
     li('Copy the <b>Client ID</b> from the app’s page and paste it here:');
@@ -1805,6 +1808,7 @@ function renderAccount() {
     kids.push(statusLine('', `Client ID saved (${A.clientIdHint}).`));
     kids.push(el('p', 'set-note small', phone
       ? (A.loggingIn ? 'Finish logging in in your browser, then tap “Back to Aqua MD”.' : 'Press Log in. Your browser opens; log in to Spotify, tap Agree, then tap “Back to Aqua MD”.')
+      : A.platform === 'web' ? 'Press Log in. Spotify opens in this tab; log in, click Agree, and you’ll come straight back here.'
       : (A.loggingIn ? 'Finish logging in in your browser, then come back here.' : 'Press Log in. A browser tab opens; log in to Spotify, click Agree, and come back.')));
     const row = el('div', 'set-row');
     row.append(btn('sbtn primary', A.loggingIn ? 'Open login again' : 'Log in with Spotify', { act: 'login' }), btn('sbtn', 'Change Client ID', { act: 'forget' }));
@@ -1985,13 +1989,13 @@ async function init() {
     PLATFORM = data.platform || 'linux';
     FEAT = Object.assign(FEAT, data.features || {});
     applyFeatures();
-    if (data.platform === 'win32') { optMenu.closest('.toggle').hidden = true; }
+    if (data.platform === 'win32' || data.platform === 'darwin') { optMenu.closest('.toggle').hidden = true; }
     optLogin.checked = !!st.startOnLogin;
     optMenu.checked = st.appMenu !== false;
     optTop.checked = !!st.onTop;
     optAwake.checked = !!st.keepAwake;
     integrationNote({ appImage: APPIMAGE });
-    $('ver').textContent = `Aqua MD ${data.version || ''}${PLATFORM === 'android' ? ' · Android beta' : ''}`.trim();
+    $('ver').textContent = `Aqua MD ${data.version || ''}${PLATFORM === 'android' ? ' · Android beta' : PLATFORM === 'web' ? ' · Web' : ''}`.trim();
     const last = st.lastDisc;
     let start = 'demo';
     if (last === 'spotify' && SP.available) start = 'spotify';

@@ -12,7 +12,8 @@
     "start": "electron .",
     "pack": "electron-builder --linux dir",
     "dist": "electron-builder --linux AppImage",
-    "dist:win": "electron-builder --win dir --x64 -c.electronDist=../castlabs-win -c.extraMetadata.version=0.4.0-beta.2 && node build/windows/make-installer.js 0.4.0-beta.2"
+    "dist:win": "electron-builder --win dir --x64 -c.electronDist=../castlabs-win -c.extraMetadata.version=0.4.0-beta.2 && node build/windows/make-installer.js 0.4.0-beta.2",
+    "dist:mac": "electron-builder --mac dir --arm64 -c.electronDist=../castlabs-mac -c.executableName='Aqua MD' -c.extraMetadata.version=0.4.1-beta.1 && node build/mac/finish-mac.js 0.4.1-beta.1"
   },
   "build": {
     "appId": "app.aquamd.player",
@@ -73,7 +74,23 @@
         "from": "build/icon.ico",
         "to": "icon.ico"
       }
-    ]
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.music",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "darkModeSupport": true
+    }
   },
   "dependencies": {
     "dbus-next": "0.10.2",

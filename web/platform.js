@@ -735,6 +735,20 @@ async function setWindowMode(mode) {
 }
 document.addEventListener('fullscreenchange', () => emit('window:display', displayInfo()));
 
+/* ---------------- keep the screen on ---------------- */
+let wakeLock = null, wantAwake = false;
+async function keepAwake(on) {
+  wantAwake = !!on;
+  if (NATIVE && NATIVE.setKeepAwake) { NATIVE.setKeepAwake(wantAwake); return; }
+  if (!('wakeLock' in navigator)) return;
+  try {
+    if (wantAwake && !wakeLock && document.visibilityState === 'visible') { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); }
+    if (!wantAwake && wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch (e) { wakeLock = null; }
+}
+// Browsers drop the wake lock when the tab is hidden; take it again when it comes back.
+document.addEventListener('visibilitychange', () => { if (wantAwake && document.visibilityState === 'visible') keepAwake(true); });
+
 /* ---------------- picking files ---------------- */
 function pickFiles(folder) {
   return new Promise(resolve => {
@@ -782,7 +796,9 @@ const ready = (async () => {
     await web.handleCallback(q);
   }
   if (settings.get('windowMode') === 'full' && NATIVE && NATIVE.setFullscreen) { NATIVE.setFullscreen(true); nativeFull = true; }
-  if (settings.get('keepAwake') && NATIVE && NATIVE.setKeepAwake) NATIVE.setKeepAwake(true);
+  if (settings.get('keepAwake')) keepAwake(true);
+  // Website version: works offline and can be installed as an app (Chrome, Chrome OS).
+  if (!NATIVE && 'serviceWorker' in navigator && isSecureContext && !DEV.noWorker) navigator.serviceWorker.register('sw.js').catch(() => {});
   remote.start();
   if (web.linked) engine.start();
 })();
@@ -810,7 +826,7 @@ window.aqua = {
     return {
       version: NATIVE && NATIVE.version ? NATIVE.version() : VERSION,
       platform: PLATFORM, appImage: true,
-      features: { folders: !NATIVE, drop: !MOBILE, quit: false, startup: false, screens: false, onTop: false, fullscreen: true, keepAwake: !!(NATIVE && NATIVE.setKeepAwake) },
+      features: { folders: !NATIVE, drop: !MOBILE, quit: false, startup: false, screens: false, onTop: false, fullscreen: true, keepAwake: !!(NATIVE && NATIVE.setKeepAwake) || 'wakeLock' in navigator },
       settings: {
         weather: settings.get('weather'), volume: settings.get('volume'), lastDisc: settings.get('lastDisc'), shuffle: !!settings.get('shuffle'),
         repeat: settings.get('repeat') || 'off', colors: settings.get('colors') || {}, recentPlaylists: settings.get('recentPlaylists') || [], widgets: settings.get('widgets'),
@@ -873,5 +889,5 @@ window.aqua = {
     const s = JSON.stringify(info || {});
     if (s !== lastPlaying) { lastPlaying = s; try { NATIVE.nowPlaying(s); } catch (e) { /* app closing */ } }
   },
-  setKeepAwake: on => { settings.set('keepAwake', !!on); if (NATIVE && NATIVE.setKeepAwake) NATIVE.setKeepAwake(!!on); }
+  setKeepAwake: on => { settings.set('keepAwake', !!on); keepAwake(!!on); }
 };

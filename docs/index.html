@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux (plus Windows and Android betas), made for the Corsair Xeneon Edge.">
+<meta name="description" content="Aqua MD: a see-through, MiniDisc-style music player for Linux (plus Windows, Mac and Android betas, and a web version), made for the Corsair Xeneon Edge.">
 <link rel="icon" type="image/png" href="img/icon.png">
 <title>Aqua MD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -190,6 +190,7 @@ section { scroll-margin-top: 110px; }
 .steps li { display: grid; grid-template-columns: 54px 1fr; gap: 14px; align-items: start; font-size: 20px; line-height: 1.4; }
 .steps li::before { counter-increment: s; content: counter(s, decimal-leading-zero); font-family: var(--font-dot); font-weight: 900; font-size: 34px; line-height: 1; color: var(--lcd-on); text-shadow: 0 0 12px var(--lcd-glow); }
 .steps b { font-weight: 600; }
+.steps code { font-family: ui-monospace, monospace; font-size: .82em; color: var(--lcd-on); overflow-wrap: anywhere; }
 .ind.beta { color: hsl(40 100% 74% / .25); }
 .ind.beta.on { color: #ffcf7a; text-shadow: 0 0 10px rgba(255,207,122,.55); }
 .beta-tag { display: inline-block; margin-left: 4px; padding: 3px 7px 2px; border-radius: 7px; border: 1px solid rgba(255,207,122,.7); color: #ffcf7a; font-family: var(--font-label); font-size: 10px; letter-spacing: .16em; line-height: 1.2; vertical-align: middle; text-shadow: 0 0 8px rgba(255,207,122,.45); }
@@ -302,7 +303,7 @@ footer p { margin: 0; max-width: 90ch; }
   <section class="hero" aria-labelledby="h1">
     <div class="hero-lcd lcd">
       <div class="row">
-        <div class="inds"><span class="ind on">LINUX</span><span class="ind beta on">WINDOWS BETA</span><span class="ind beta on">ANDROID BETA</span><span class="ind">MACOS</span></div>
+        <div class="inds"><span class="ind on">LINUX</span><span class="ind beta on">WINDOWS BETA</span><span class="ind beta on">MAC BETA</span><span class="ind beta on">ANDROID BETA</span><span class="ind on">WEB</span></div>
         <div class="inds"><span class="ind on">APPIMAGE</span><span class="ind on">V0.4.0</span></div>
       </div>
       <h1 id="h1">AQUA MD</h1>
@@ -314,7 +315,7 @@ footer p { margin: 0; max-width: 90ch; }
     </div>
 
     <div class="hero-text">
-      <p class="lead">Aqua MD plays Spotify, your own music and the sound from your videos on a glass deck that spins, glows and scrolls song titles across a dot-matrix display. Widgets take turns on the side. It was made for the Corsair Xeneon Edge, and it fits any window, and your phone, too. Linux now, Windows and Android in beta.</p>
+      <p class="lead">Aqua MD plays Spotify, your own music and the sound from your videos on a glass deck that spins, glows and scrolls song titles across a dot-matrix display. Widgets take turns on the side. It was made for the Corsair Xeneon Edge, and it fits any window, and your phone, too. Linux now; Windows, Mac and Android in beta; or right in your browser.</p>
       <div class="cta">
         <a class="btn primary" href="#download" id="heroDl"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span>Download</span></a>
         <a class="btn" href="#features">See what it does</a>
@@ -455,12 +456,14 @@ footer p { margin: 0; max-width: 90ch; }
     <div class="sec-head">
       <span class="label">Download</span>
       <h2 id="d-h">Get Aqua MD</h2>
-      <p>For Linux, plus Windows and Android betas. No terminal needed.</p>
+      <p>For Linux, plus Windows, Mac and Android betas, or open it right in your browser. No terminal needed.</p>
     </div>
     <div class="tabs os-tabs" role="tablist" aria-label="Choose your system">
       <button class="btn tab" role="tab" id="os-linux" aria-controls="dl-linux" aria-selected="true" data-os="linux">LINUX</button>
       <button class="btn tab" role="tab" id="os-win" aria-controls="dl-win" aria-selected="false" data-os="win">WINDOWS <span class="beta-tag">BETA</span></button>
+      <button class="btn tab" role="tab" id="os-mac" aria-controls="dl-mac" aria-selected="false" data-os="mac">MAC <span class="beta-tag">BETA</span></button>
       <button class="btn tab" role="tab" id="os-android" aria-controls="dl-android" aria-selected="false" data-os="android">ANDROID <span class="beta-tag">BETA</span></button>
+      <button class="btn tab" role="tab" id="os-web" aria-controls="dl-web" aria-selected="false" data-os="web">WEB · CHROME OS</button>
     </div>
     <div class="dl glass screws" role="tabpanel" id="dl-linux" aria-labelledby="os-linux">
       <div class="dl-lcd lcd">
@@ -500,6 +503,27 @@ footer p { margin: 0; max-width: 90ch; }
         </div>
       </div>
     </div>
+    <div class="dl glass screws" role="tabpanel" id="dl-mac" aria-labelledby="os-mac" hidden>
+      <div class="dl-lcd lcd">
+        <div class="inds"><span class="ind on">MACOS</span><span class="ind on">APPLE SILICON</span><span class="ind beta on">BETA</span></div>
+        <div class="file">AquaMD-Mac-Beta.zip</div>
+        <div class="meta">124 MB · App</div>
+        <div class="os"><span class="ind beta on">FIRST BETA</span><span class="ind beta on">NOT YET TRIED ON A MAC</span></div>
+      </div>
+      <div class="dl-main">
+        <a class="btn primary" href="https://github.com/Danii45/Aqua-MD/releases/latest/download/AquaMD-Mac-Beta.zip" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Mac <span class="beta-tag">BETA</span></a>
+        <ol class="steps">
+          <li><div><b>Download and double-click</b> the zip, then drag <b>Aqua MD</b> into your <b>Applications</b> folder.</div></li>
+          <li><div><b>Open it once the Mac way.</b> When macOS says it can’t check it, click <b>Done</b>. Open <b>System Settings → Privacy &amp; Security</b>, scroll down and click <b>Open Anyway</b> next to Aqua MD. Aqua MD isn’t notarized by Apple yet, so the Mac asks first.</div></li>
+          <li><div><b>That’s it.</b> From then on it opens like any app. On a Xeneon Edge it goes full screen there by itself.</div></li>
+        </ol>
+        <div class="beta-box">
+          <b>This is a beta.</b>
+          <span>Built for Macs with Apple chips (M1 and newer) and not yet tried on a real Mac. If the built-in Spotify player doesn’t start, Aqua MD shows and controls the Spotify app instead, after you log in once in Settings. CPU and GPU temperatures aren’t shown on a Mac.</span>
+          <a href="#bugs">Report a problem</a>
+        </div>
+      </div>
+    </div>
     <div class="dl glass screws" role="tabpanel" id="dl-android" aria-labelledby="os-android" hidden>
       <div class="dl-lcd lcd">
         <div class="inds"><span class="ind on">ANDROID 8+</span><span class="ind on">PHONE · TABLET</span><span class="ind beta on">BETA</span></div>
@@ -521,6 +545,27 @@ footer p { margin: 0; max-width: 90ch; }
         </div>
       </div>
     </div>
+    <div class="dl glass screws" role="tabpanel" id="dl-web" aria-labelledby="os-web" hidden>
+      <div class="dl-lcd lcd">
+        <div class="inds"><span class="ind on">CHROME</span><span class="ind on">CHROME OS</span><span class="ind on">EDGE</span></div>
+        <div class="file">danii45.github.io/Aqua-MD/app</div>
+        <div class="meta">Nothing to download</div>
+        <div class="os"><span class="ind on">INSTALLS AS AN APP</span><span class="ind on">WORKS OFFLINE</span></div>
+      </div>
+      <div class="dl-main">
+        <a class="btn primary" href="https://danii45.github.io/Aqua-MD/app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.5 3.8 5.4 3.8 8.5s-1.2 6-3.8 8.5M12 3.5C9.4 6 8.2 8.9 8.2 12s1.2 6 3.8 8.5"/></svg>Open Aqua MD in your browser</a>
+        <ol class="steps">
+          <li><div><b>Open it in Chrome</b> (or Edge). On a Chromebook or computer, click the <b>Install</b> icon in the address bar to give it its own window and an icon in your launcher.</div></li>
+          <li><div><b>Add songs or a whole folder.</b> They’re saved in your browser, so they’re still there next time, even offline.</div></li>
+          <li><div><b>For Spotify,</b> follow the steps in Settings. Already set up the desktop version? Use the same Client ID and add one more Redirect URI: <code>https://danii45.github.io/Aqua-MD/callback/</code></div></li>
+        </ol>
+        <div class="beta-box">
+          <b>Good to know</b>
+          <span>On computers and Chromebooks, Spotify plays right in the browser (Premium needed). In a phone’s browser it controls the Spotify app instead; on Android the app is the better fit. Songs you add stay in that one browser. The System widget is desktop-only.</span>
+          <a href="#bugs">Report a problem</a>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="sec" id="bugs" aria-labelledby="b-h">
@@ -536,7 +581,9 @@ footer p { margin: 0; max-width: 90ch; }
           <div class="pick">
             <label class="opt"><input type="radio" name="system" value="Linux" checked><span>LINUX</span></label>
             <label class="opt"><input type="radio" name="system" value="Windows beta"><span>WINDOWS <span class="beta-tag">BETA</span></span></label>
+            <label class="opt"><input type="radio" name="system" value="Mac beta"><span>MAC <span class="beta-tag">BETA</span></span></label>
             <label class="opt"><input type="radio" name="system" value="Android beta"><span>ANDROID <span class="beta-tag">BETA</span></span></label>
+            <label class="opt"><input type="radio" name="system" value="Web version"><span>WEB · CHROME OS</span></label>
           </div>
         </fieldset>
         <fieldset class="field">
@@ -643,11 +690,17 @@ footer p { margin: 0; max-width: 90ch; }
     });
   });
   const plat = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '').toLowerCase();
-  const onAndroid = /android/i.test(navigator.userAgent) || plat.includes('android');
+  const ua = navigator.userAgent || '';
+  const onAndroid = /android/i.test(ua) || plat.includes('android');
+  const onChromeOS = /CrOS/.test(ua) || plat.includes('chrome os');
+  const onMac = !onAndroid && (plat.includes('mac') || /Macintosh/.test(ua)) && !/iPhone|iPad/.test(ua);
   const onWindows = !onAndroid && plat.includes('win');
-  pickOs(osTabs[onAndroid ? 2 : onWindows ? 1 : 0]);
+  const byId = id => osTabs.find(t => t.id === id);
+  pickOs(byId(onAndroid ? 'os-android' : onChromeOS ? 'os-web' : onMac ? 'os-mac' : onWindows ? 'os-win' : 'os-linux'));
   const heroDl = document.getElementById('heroDl');
   if (onAndroid) heroDl.querySelector('span').innerHTML = 'Download for Android <span class="beta-tag">BETA</span>';
+  else if (onChromeOS) heroDl.querySelector('span').textContent = 'Open in your browser';
+  else if (onMac) heroDl.querySelector('span').innerHTML = 'Download for Mac <span class="beta-tag">BETA</span>';
   else if (onWindows) heroDl.querySelector('span').innerHTML = 'Download for Windows <span class="beta-tag">BETA</span>';
   else if (plat.includes('linux')) heroDl.querySelector('span').textContent = 'Download for Linux';
 
@@ -685,7 +738,7 @@ footer p { margin: 0; max-width: 90ch; }
   const form = document.getElementById('bugForm');
   const bugMsg = document.getElementById('bugMsg');
   const HINT = bugMsg.innerHTML;
-  form.elements.system.value = onAndroid ? 'Android beta' : onWindows ? 'Windows beta' : 'Linux';
+  form.elements.system.value = onAndroid ? 'Android beta' : onChromeOS ? 'Web version' : onMac ? 'Mac beta' : onWindows ? 'Windows beta' : 'Linux';
   if (onAndroid) form.elements.screen.value = 'on a phone or tablet';
   form.addEventListener('input', e => { if (e.target.value.trim()) e.target.removeAttribute('aria-invalid'); });
   form.addEventListener('submit', e => {

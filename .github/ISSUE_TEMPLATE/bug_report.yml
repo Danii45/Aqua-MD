@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in Aqua MD isn't working right.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make Aqua MD better! Screenshots help a lot: drag them into any box below.
+  - type: input
+    id: setup
+    attributes:
+      label: System and screen
+      description: Linux or Windows, and whether Aqua MD was full screen on a Xeneon Edge, full screen on another monitor, or a window.
+      placeholder: Windows beta · full screen on a Xeneon Edge
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Aqua MD version
+      description: It's shown at the bottom of Settings.
+      placeholder: Aqua MD 0.4.0
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What went wrong, and what you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      placeholder: |
+        1. Open Playlists
+        2. Tap shuffle on a playlist
+        3. ...

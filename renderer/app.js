@@ -1604,7 +1604,7 @@ plBody.addEventListener('click', e => {
 });
 
 /* ---------- settings panel ---------- */
-const optLogin = $('optLogin'), optMenu = $('optMenu'), intNote = $('intNote');
+const optLogin = $('optLogin'), optMenu = $('optMenu'), optTop = $('optTop'), intNote = $('intNote');
 let APPIMAGE = false, DISPLAY = null;
 $('quitBtn').addEventListener('click', () => { if (api) api.quit(); });
 $('addFolder').addEventListener('click', () => addMusic('folder'));
@@ -1640,6 +1640,7 @@ function integrationNote(r) {
 }
 optLogin.addEventListener('change', async () => { if (api) integrationNote(await api.set('startOnLogin', optLogin.checked)); });
 optMenu.addEventListener('change', async () => { if (api) integrationNote(await api.set('appMenu', optMenu.checked)); });
+optTop.addEventListener('change', () => { if (api) api.set('onTop', optTop.checked); });
 const winMode = $('winMode');
 function paintWinMode() {
   const mode = DISPLAY ? (DISPLAY.fullscreen ? 'full' : 'window') : 'full';
@@ -1906,6 +1907,7 @@ async function init() {
     if (data.platform === 'win32') { optMenu.closest('.toggle').hidden = true; }
     optLogin.checked = !!st.startOnLogin;
     optMenu.checked = st.appMenu !== false;
+    optTop.checked = !!st.onTop;
     integrationNote({ appImage: APPIMAGE });
     $('ver').textContent = `Aqua MD ${data.version || ''}`.trim();
     const last = st.lastDisc;

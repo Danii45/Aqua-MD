@@ -93,6 +93,23 @@ function asWindow(d) {
   else go();
 }
 
+// Other apps can draw their own full-screen window on the Edge (Corsair iCUE does on Windows) and cover
+// Aqua MD. While full screen, Aqua MD can sit in the always-on-top layer and push itself to the front.
+const onTopWanted = () => { const v = settings.get('onTop'); return v == null ? process.platform === 'win32' : !!v; };
+function applyOnTop() {
+  if (!win || win.isDestroyed()) return;
+  const on = onTopWanted() && win.isFullScreen();
+  if (win.isAlwaysOnTop() !== on) win.setAlwaysOnTop(on, 'screen-saver');
+  if (on) win.moveTop();
+}
+let frontTimers = [];
+function bringToFront() {
+  frontTimers.forEach(clearTimeout);
+  applyOnTop();
+  // iCUE may grab the front again right after we start, so check back a few times.
+  frontTimers = [500, 1500, 4000, 9000].map(ms => setTimeout(applyOnTop, ms));
+}
+
 function setWindowMode(mode) {
   settings.set('windowMode', mode === 'window' ? 'window' : 'full');
   const here = screen.getDisplayMatching(win.getBounds());
@@ -147,8 +164,10 @@ function createWindow() {
     if (full) placeOn(target);
     sendDisplay();
   });
-  win.on('enter-full-screen', sendDisplay);
-  win.on('leave-full-screen', sendDisplay);
+  win.on('enter-full-screen', () => { sendDisplay(); bringToFront(); });
+  win.on('leave-full-screen', () => { sendDisplay(); applyOnTop(); });
+  win.on('restore', applyOnTop);
+  win.on('focus', applyOnTop);
   let saveT = 0;
   const remember = () => {
     clearTimeout(saveT);
@@ -237,7 +256,7 @@ function registerProtocol() {
 }
 
 /* ---------------- IPC ---------------- */
-const SETTABLE = new Set(['weather', 'startOnLogin', 'appMenu', 'volume', 'lastDisc', 'shuffle', 'repeat', 'colors', 'recentPlaylists', 'widgets']);
+const SETTABLE = new Set(['weather', 'startOnLogin', 'appMenu', 'onTop', 'volume', 'lastDisc', 'shuffle', 'repeat', 'colors', 'recentPlaylists', 'widgets']);
 const fromDeck = e => !!(win && !win.isDestroyed() && e.sender === win.webContents);
 function deckHandle(channel, fn) {
   ipcMain.handle(channel, (e, ...args) => { if (!fromDeck(e)) return null; return fn(...args); });
@@ -258,7 +277,7 @@ function wireIpc() {
     platform: process.platform,
     appImage: !!process.env.APPIMAGE || process.platform === 'win32',
     settings: {
-      weather: settings.get('weather'), startOnLogin: settings.get('startOnLogin'), appMenu: settings.get('appMenu'),
+      weather: settings.get('weather'), startOnLogin: settings.get('startOnLogin'), appMenu: settings.get('appMenu'), onTop: onTopWanted(),
       volume: settings.get('volume'), lastDisc: settings.get('lastDisc'), shuffle: !!settings.get('shuffle'), repeat: settings.get('repeat') || 'off',
       colors: settings.get('colors') || {}, recentPlaylists: settings.get('recentPlaylists') || [], widgets: settings.get('widgets')
     },
@@ -305,6 +324,7 @@ function wireIpc() {
     if (!SETTABLE.has(key)) return false;
     settings.set(key, value);
     if (key === 'startOnLogin' || key === 'appMenu') return runIntegration();
+    if (key === 'onTop') bringToFront();
     return true;
   });
   deckHandle('window:next-screen', () => nextScreen());

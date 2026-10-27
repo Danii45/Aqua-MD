@@ -201,12 +201,62 @@ section { scroll-margin-top: 110px; }
 .note { margin: 0; color: var(--ink-dim); font-size: 18px; }
 .os { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 6px; }
 
+/* ---------- bug reports ---------- */
+.bugs { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.bug-form { padding: 30px; display: grid; gap: 22px; }
+.field { display: grid; gap: 9px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.field legend, .flabel { padding: 0; font-family: var(--font-label); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-dim); }
+.field legend { margin-bottom: 9px; }
+.flabel em { font-style: normal; letter-spacing: .12em; color: var(--ink-faint); }
+.input {
+  width: 100%; min-height: 58px; padding: 13px 16px; border-radius: 16px; border: 1.5px solid hsl(calc(var(--h) - 4) 100% 79% / .32);
+  background: radial-gradient(120% 160% at 30% 0%, hsl(calc(var(--h) - 2) 79% 11%), var(--lcd) 60%);
+  box-shadow: inset 0 2px 12px rgba(0,0,0,.4), inset 0 0 40px hsl(calc(var(--lh) + 8) 100% 62% / .06);
+  color: var(--ink); font: 400 19px/1.45 var(--font-body); transition: border-color .2s, box-shadow .2s;
+}
+textarea.input { min-height: 124px; resize: vertical; }
+.input::placeholder { color: var(--ink-faint); opacity: 1; }
+.input:focus { outline: none; border-color: var(--lcd-on); box-shadow: inset 0 2px 12px rgba(0,0,0,.4), 0 0 0 3px hsl(var(--lh) 100% 78% / .22), 0 0 22px hsl(var(--lh) 100% 72% / .25); }
+.input[aria-invalid="true"] { border-color: #ffcf7a; box-shadow: inset 0 2px 12px rgba(0,0,0,.4), 0 0 0 3px rgba(255,207,122,.25); }
+.pick { display: flex; flex-wrap: wrap; gap: 10px; }
+.opt { position: relative; display: inline-flex; }
+.opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.opt > span {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 52px; padding: 0 18px; border-radius: 16px;
+  border: 1.5px solid hsl(calc(var(--h) - 4) 100% 81% / .45);
+  background: linear-gradient(180deg, hsl(calc(var(--h) - 3) 100% 77% / .2), hsl(calc(var(--h) + 4) 86% 57% / .1));
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.4);
+  font-family: var(--font-label); font-size: 12px; letter-spacing: .16em; color: var(--ink-dim); transition: color .2s, box-shadow .25s, background .25s;
+}
+.opt input:checked + span { color: var(--lcd-hot); background: linear-gradient(180deg, hsl(calc(var(--h) - 3) 100% 77% / .32), hsl(calc(var(--h) + 4) 86% 57% / .2));
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.55), 0 0 0 3px hsl(var(--lh) 100% 78% / .35), 0 0 24px hsl(var(--lh) 100% 72% / .3); }
+.opt input:focus-visible + span { outline: 3px solid var(--lcd-on); outline-offset: 3px; }
+.bug-send { display: grid; gap: 12px; }
+.bug-send .btn { width: 100%; min-height: 72px; font-size: 23px; }
+.bug-send .note b { color: var(--ink); font-weight: 600; }
+.bug-send .note.warn { color: #ffcf7a; }
+.log { padding: 22px; display: grid; gap: 16px; }
+.log-lcd { padding: 20px 20px 16px; display: grid; gap: 10px; min-height: 340px; align-content: start; }
+.log-count { font-size: clamp(28px, 3vw, 40px); line-height: 1.1; }
+.reports { list-style: none; margin: 4px -8px 0; padding: 0; display: grid; }
+.reports li + li { border-top: 1px solid hsl(var(--lh) 100% 78% / .1); }
+.reports a { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; padding: 12px 10px; border-radius: 12px; color: var(--ink); text-decoration: none; }
+.reports a:hover { background: hsl(var(--lh) 100% 78% / .07); }
+.rn { grid-row: span 2; min-width: 3ch; font-family: var(--font-dot); font-weight: 900; font-size: 24px; line-height: 1.1; color: var(--lcd-on); text-shadow: 0 0 12px var(--lcd-glow); }
+.rt { font-size: 19px; line-height: 1.3; overflow-wrap: anywhere; }
+.rm { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font-size: 15px; color: var(--ink-faint); }
+.rm .ind { font-size: 10px; }
+.ind.dim { color: hsl(var(--lh) 100% 78% / .4); }
+.log-empty { margin: 10px 0 0; font-size: 19px; color: var(--ink-dim); }
+.log .btn { width: 100%; }
+
 footer { margin-top: 90px; padding-top: 26px; border-top: 1px solid hsl(calc(var(--h) - 5) 100% 79% / .18); display: grid; gap: 8px; color: var(--ink-faint); font-size: 17px; }
 footer p { margin: 0; max-width: 90ch; }
 
 @media (max-width: 980px) {
   .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .spot, .dl, .windows { grid-template-columns: minmax(0, 1fr); }
+  .spot, .dl, .windows, .bugs { grid-template-columns: minmax(0, 1fr); }
+  .log-lcd { min-height: 0; }
   .hero-text { grid-template-columns: minmax(0, 1fr); }
   .nav { display: none; }
 }
@@ -218,7 +268,9 @@ footer p { margin: 0; max-width: 90ch; }
   .bezel { padding: 8px; border-radius: 18px; }
   .screen { border-radius: 10px; }
   .sw { width: 42px; height: 42px; }
-  .dl { padding: 18px; }
+  .dl, .bug-form, .log { padding: 18px; }
+  .log-lcd { padding: 16px 14px 12px; }
+  .bug-send .btn { min-height: 64px; padding: 0 16px; font-size: 20px; }
   .sec { margin-top: 80px; }
   .top .btn span.long { display: none; }
   .brand span { font-size: 13px; letter-spacing: .2em; }
@@ -240,6 +292,7 @@ footer p { margin: 0; max-width: 90ch; }
       <a href="#widgets">WIDGETS</a>
       <a href="#spotify">SPOTIFY</a>
       <a href="#download">DOWNLOAD</a>
+      <a href="#bugs">BUGS</a>
     </nav>
     <a class="btn primary" href="#download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span class="long">Download</span></a>
   </div>
@@ -430,7 +483,7 @@ footer p { margin: 0; max-width: 90ch; }
         <div class="inds"><span class="ind on">WINDOWS 10 · 11</span><span class="ind on">X64</span><span class="ind beta on">BETA</span></div>
         <div class="file">AquaMD-Windows-Beta-Setup.exe</div>
         <div class="meta" id="winSize">111 MB · Installer</div>
-        <div class="os"><span class="ind beta on">NOT YET TESTED ON A WINDOWS PC</span></div>
+        <div class="os"><span class="ind beta on">TESTED ON ONE WINDOWS PC SO FAR</span></div>
       </div>
       <div class="dl-main">
         <a class="btn primary" href="https://github.com/Danii45/Aqua-MD/releases/latest/download/AquaMD-Windows-Beta-Setup.exe" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg>Download for Windows <span class="beta-tag">BETA</span></a>
@@ -441,9 +494,57 @@ footer p { margin: 0; max-width: 90ch; }
         </ol>
         <div class="beta-box">
           <b>This is a beta.</b>
-          <span>Built for Windows but not yet tried on a real Windows PC, so expect rough edges. The built-in Spotify player may not work on Windows yet; when it doesn’t, Aqua MD shows and controls the Spotify app instead, after you log in once in Settings. CPU and GPU temperatures aren’t shown on Windows.</span>
-          <a href="https://github.com/Danii45/Aqua-MD/issues" target="_blank" rel="noopener">Report a problem on GitHub</a>
+          <span>It’s been tested on one Windows PC so far, so expect rough edges. If the built-in Spotify player doesn’t work on your PC, Aqua MD shows and controls the Spotify app instead, after you log in once in Settings. On a Xeneon Edge it stays in front of iCUE’s widget screen; turn that off in Settings → Screen. CPU and GPU temperatures aren’t shown on Windows.</span>
+          <a href="#bugs">Report a problem</a>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="bugs" aria-labelledby="b-h">
+    <div class="sec-head">
+      <span class="label">Bug reports</span>
+      <h2 id="b-h">Found a bug?</h2>
+      <p>Say what went wrong and it goes to Aqua MD’s page on GitHub, where every report is tracked until it’s fixed. Sending one needs a free GitHub account.</p>
+    </div>
+    <div class="bugs">
+      <form class="bug-form glass screws" id="bugForm" novalidate>
+        <fieldset class="field">
+          <legend>System</legend>
+          <div class="pick">
+            <label class="opt"><input type="radio" name="system" value="Linux" checked><span>LINUX</span></label>
+            <label class="opt"><input type="radio" name="system" value="Windows beta"><span>WINDOWS <span class="beta-tag">BETA</span></span></label>
+          </div>
+        </fieldset>
+        <fieldset class="field">
+          <legend>How Aqua MD was showing</legend>
+          <div class="pick">
+            <label class="opt"><input type="radio" name="screen" value="full screen on a Xeneon Edge" checked><span>XENEON EDGE</span></label>
+            <label class="opt"><input type="radio" name="screen" value="full screen on another monitor"><span>OTHER MONITOR</span></label>
+            <label class="opt"><input type="radio" name="screen" value="as a window"><span>A WINDOW</span></label>
+          </div>
+        </fieldset>
+        <label class="field"><span class="flabel">What went wrong? <em>· one line</em></span>
+          <input class="input" name="title" maxlength="120" autocomplete="off" placeholder="Playlists menu stays empty"></label>
+        <label class="field"><span class="flabel">What happened</span>
+          <textarea class="input" name="what" rows="4" maxlength="2500" placeholder="What you saw, and what you expected instead"></textarea></label>
+        <label class="field"><span class="flabel">How to make it happen again <em>· optional</em></span>
+          <textarea class="input" name="steps" rows="3" maxlength="1500" placeholder="1. Open Playlists&#10;2. Tap shuffle on a playlist&#10;3. …"></textarea></label>
+        <label class="field"><span class="flabel">Aqua MD version <em>· optional, bottom of Settings</em></span>
+          <input class="input" name="version" maxlength="40" autocomplete="off" placeholder="Aqua MD 0.4.0"></label>
+        <div class="bug-send">
+          <button class="btn primary" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg>Send report on GitHub</button>
+          <p class="note" id="bugMsg" role="status">GitHub opens in a new tab with your report filled in. Drag in a screenshot if you have one, then press <b>Create</b>.</p>
+        </div>
+      </form>
+      <div class="log glass">
+        <div class="log-lcd lcd">
+          <div class="inds"><span class="ind on">REPORT LOG</span><span class="ind" id="logLive">LIVE FROM GITHUB</span></div>
+          <div class="log-count dot" id="logCount">LOADING</div>
+          <ul class="reports" id="reports"></ul>
+          <p class="log-empty" id="logEmpty" hidden></p>
+        </div>
+        <a class="btn" href="https://github.com/Danii45/Aqua-MD/issues?q=label%3Abug" target="_blank" rel="noopener">All reports on GitHub</a>
       </div>
     </div>
   </section>
@@ -531,7 +632,7 @@ footer p { margin: 0; max-width: 90ch; }
     'system': ['System widget with CPU, GPU and RAM bars, and a calendar for the week', 'System shows CPU, GPU and memory use with temperatures. The calendar marks today.'],
     'settings': ['Settings panel with page timing buttons and a list of widgets on page 1', 'Build pages in Settings: pick widgets, make them big or small, move them around and choose how often pages switch.']
   };
-  const tabs = [...document.querySelectorAll('.tab')];
+  const tabs = [...document.querySelectorAll('#widgets .tab')];
   const img = document.getElementById('shotImg'), cap = document.getElementById('shotCap'), panel = document.getElementById('p-shot');
   function show(tab) {
     tabs.forEach(t => { const on = t === tab; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
@@ -551,6 +652,71 @@ footer p { margin: 0; max-width: 90ch; }
   });
   // Warm the other screenshots so switching tabs is instant.
   Object.keys(SHOTS).forEach(k => { const p = new Image(); p.src = `img/${k}.webp`; });
+
+  // Bug reports: the form opens a filled-in GitHub issue (template .github/ISSUE_TEMPLATE/bug_report.yml);
+  // the log lists the latest reports straight from GitHub.
+  const REPO = 'Danii45/Aqua-MD';
+  const form = document.getElementById('bugForm');
+  const bugMsg = document.getElementById('bugMsg');
+  const HINT = bugMsg.innerHTML;
+  form.elements.system.value = onWindows ? 'Windows beta' : 'Linux';
+  form.addEventListener('input', e => { if (e.target.value.trim()) e.target.removeAttribute('aria-invalid'); });
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const f = form.elements;
+    const missing = ['title', 'what'].map(n => f[n]).filter(x => !x.value.trim());
+    missing.forEach(x => x.setAttribute('aria-invalid', 'true'));
+    if (missing.length) {
+      bugMsg.classList.add('warn');
+      bugMsg.textContent = missing.length === 2 ? 'Add a one-line title and what happened first.' : missing[0].name === 'title' ? 'Add a one-line title first.' : 'Say what happened first.';
+      missing[0].focus();
+      return;
+    }
+    const q = new URLSearchParams({ template: 'bug_report.yml', title: '[Bug] ' + f.title.value.trim(), setup: `${f.system.value} · ${f.screen.value}`, what: f.what.value.trim() });
+    if (f.steps.value.trim()) q.set('steps', f.steps.value.trim());
+    if (f.version.value.trim()) q.set('version', f.version.value.trim());
+    window.open(`https://github.com/${REPO}/issues/new?${q}`, '_blank', 'noopener');
+    bugMsg.classList.remove('warn');
+    bugMsg.innerHTML = HINT;
+  });
+
+  const list = document.getElementById('reports'), count = document.getElementById('logCount'), empty = document.getElementById('logEmpty');
+  const ago = iso => {
+    const s = (new Date(iso) - Date.now()) / 1000, rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+    for (const [u, n] of [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]]) if (Math.abs(s) >= n) return rtf.format(Math.round(s / n), u);
+    return 'just now';
+  };
+  const span = (cls, text) => { const x = document.createElement('span'); x.className = cls; x.textContent = text; return x; };
+  async function loadReports() {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${REPO}/issues?state=all&labels=bug&per_page=100`, { headers: { Accept: 'application/vnd.github+json' } });
+      if (!r.ok) throw new Error(String(r.status));
+      const all = (await r.json()).filter(i => !i.pull_request);
+      const fixed = i => i.state === 'closed' && i.state_reason !== 'not_planned';
+      const open = all.filter(i => i.state === 'open').length;
+      count.textContent = `${open} OPEN · ${all.filter(fixed).length} FIXED`;
+      document.getElementById('logLive').classList.add('on');
+      list.replaceChildren(...all.slice(0, 6).map(i => {
+        const li = document.createElement('li'), a = document.createElement('a');
+        a.href = i.html_url; a.target = '_blank'; a.rel = 'noopener';
+        const st = i.state === 'open' ? span('ind beta on', 'OPEN') : fixed(i) ? span('ind on', 'FIXED') : span('ind dim', 'CLOSED');
+        const meta = span('rm', ''); meta.append(st, span('', ago(i.created_at)));
+        a.append(span('rn', '#' + i.number), span('rt', i.title.replace(/^\[bug\]\s*/i, '')), meta);
+        li.append(a); return li;
+      }));
+      empty.hidden = all.length > 0;
+      empty.textContent = 'No bugs reported yet. New reports show up here as soon as they’re sent.';
+    } catch (err) {
+      count.textContent = 'NO SIGNAL';
+      empty.hidden = false;
+      empty.textContent = 'The report log couldn’t load here. Every report is on GitHub.';
+    }
+  }
+  // Only ask GitHub once the section is close to the screen.
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { io.disconnect(); loadReports(); } }, { rootMargin: '600px 0px' });
+    io.observe(document.getElementById('bugs'));
+  } else loadReports();
 })();
 </script>
 </body>

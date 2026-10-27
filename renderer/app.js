@@ -1813,6 +1813,11 @@ function renderAccount() {
     const row = el('div', 'set-row');
     row.append(btn('sbtn primary', A.loggingIn ? 'Open login again' : 'Log in with Spotify', { act: 'login' }), btn('sbtn', 'Change Client ID', { act: 'forget' }));
     kids.push(row);
+    // Spotify only sends you back to addresses saved in your developer app. Each kind of Aqua MD uses one, so
+    // keep it in sight here: reusing a Client ID from another device skips the setup steps that show it.
+    kids.push(el('p', 'set-note small', 'If Spotify says “redirect_uri: Not matching configuration”, add this under Redirect URIs in your app on the Spotify dashboard, click Save, and log in again:'));
+    const rb = el('div', 'codebox'); rb.append(el('code', '', A.redirectUri), btn('sbtn small', 'Copy', { act: 'copy' }));
+    kids.push(rb);
   } else {
     kids.push(statusLine('ok', `Connected${A.name ? ' as ' + A.name : ''}.`));
     const eng = A.engine || { status: 'off' };
